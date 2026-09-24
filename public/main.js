@@ -430,7 +430,7 @@ async function startTerminal() {
     return response.json();
   });
   const notes = garden.notes ?? [];
-  const directories = new Set(["/", "/archive", "/about", "/tags"]);
+  const directories = new Set(["/", "/notes", "/about", "/tags"]);
   for (const note of notes) {
     const segments = cleanPath(note.path).split("/").filter(Boolean);
     for (let index = 1; index < segments.length; index += 1)
@@ -616,7 +616,7 @@ async function startTerminal() {
         break;
       }
       case "cat": {
-        const note = findNote(argument);
+        const note = argument.toLowerCase() === "about" ? garden.about : findNote(argument);
         if (!note || !["about", "now"].includes(argument.toLowerCase()))
           print("cat: available public documents are about and now", "error");
         else

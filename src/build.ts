@@ -154,6 +154,10 @@ async function main(): Promise<void> {
     config,
     process.env.CONTENT_ROOT,
   );
+  const aboutNote = notes.find((note) => note.url === "/about/") ?? notes.find(
+    (note) => /(^|[\\/])about\.md$/i.test(note.relativePath) || note.title.toLowerCase() === "about",
+  );
+  const contentNotes = notes.filter((note) => note !== aboutNote);
   const directoryLabels = new Map<string, string>();
   for (const note of notes) {
     const directories = note.relativePath.replace(/\\/g, "/").split("/").slice(0, -1);
@@ -189,7 +193,8 @@ async function main(): Promise<void> {
       author: config.author,
       tagline: config.tagline,
       subtitle: config.subtitle,
-      notes: notes.map((note) => ({
+      about: aboutNote ? { title: aboutNote.title, text: plainText(aboutNote.markdown) } : undefined,
+      notes: contentNotes.map((note) => ({
         title: note.title,
         url: note.url,
         path: note.url,
@@ -224,7 +229,7 @@ async function main(): Promise<void> {
       FULL_PATH: escapeHtml(
         `${config.siteName}${displayPath.length ? `/${displayPath.join("/")}` : ""}`,
       ),
-      NAV_ARCHIVE_ATTR: active("archive"),
+      NAV_NOTES_ATTR: active("notes"),
       NAV_TAGS_ATTR: active("tags"),
       NAV_ABOUT_ATTR: active("about"),
       CONTENT: content,
@@ -256,11 +261,6 @@ async function main(): Promise<void> {
   const copiedImages = await images.copyTo(distRoot);
 
   if (!notes.some((note) => note.url === "/about/")) {
-    const about = notes.find(
-      (note) =>
-        /(^|[\\/])about\.md$/i.test(note.relativePath) ||
-        note.title.toLowerCase() === "about",
-    );
     const output = path.join(distRoot, "about", "index.html");
     await mkdir(path.dirname(output), { recursive: true });
     await writeFile(
@@ -270,21 +270,23 @@ async function main(): Promise<void> {
         `About ${config.author}`,
         sectionPage(
           "About",
-          about?.html ?? `<p>${escapeHtml(config.author)}</p>`,
+          aboutNote?.html ?? `<p>${escapeHtml(config.author)}</p>`,
         ),
         "/about/",
       ),
     );
   }
 
-  const tree = makeTree(notes);
-  const archive = `<section class="archive-page"><h1>Archive</h1><input id="archive-query" class="archive-search" type="search" aria-label="Search notes" placeholder="Search notes…" autocomplete="off"><div class="tree archive-tree">${renderTree(tree)}</div><ul class="archive-results" id="archive-results" hidden></ul><p id="archive-empty" hidden>No matches.</p></section>`;
-  await mkdir(path.join(distRoot, "archive"), { recursive: true });
+  const tree = makeTree(contentNotes);
+  const notesPage = `<section class="archive-page"><h1>Notes</h1><input id="archive-query" class="archive-search" type="search" aria-label="Search notes" placeholder="Search notes…" autocomplete="off"><div class="tree archive-tree">${renderTree(tree)}</div><ul class="archive-results" id="archive-results" hidden></ul><p id="archive-empty" hidden>No matches.</p></section>`;
+  await mkdir(path.join(distRoot, "notes"), { recursive: true });
   await writeFile(
-    path.join(distRoot, "archive/index.html"),
-    wrapPage("archive", "All published notes", archive, "/archive/"),
+    path.join(distRoot, "notes/index.html"),
+    wrapPage("notes", "All published notes", notesPage, "/notes/"),
   );
-  for (const section of ["research", "notes", "training"]) {
+  await mkdir(path.join(distRoot, "archive"), { recursive: true });
+  await writeFile(path.join(distRoot, "archive/index.html"), '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/notes/"><link rel="canonical" href="/notes/"><title>Notes</title></head><body><a href="/notes/">Go to Notes</a></body></html>');
+  for (const section of ["research", "training"]) {
     const node = [...tree.directories].find(
       ([name]) => slugify(name) === section,
     )?.[1];
@@ -329,11 +331,7 @@ async function main(): Promise<void> {
 
   const researchKeywords = (config.researchKeywords ?? "").split("·").map((keyword) => keyword.trim()).filter(Boolean);
   const tags = new Map<string, { label: string; notes: Note[] }>();
-  for (const keyword of researchKeywords) {
-    const slug = slugify(keyword);
-    if (slug && !tags.has(slug)) tags.set(slug, { label: keyword, notes: [] });
-  }
-  for (const note of notes) {
+  for (const note of contentNotes) {
     for (const tag of note.tags) {
       const slug = slugify(tag);
       if (!slug) continue;
@@ -341,6 +339,10 @@ async function main(): Promise<void> {
       const tagged = tags.get(slug)!.notes;
       if (!tagged.includes(note)) tagged.push(note);
     }
+  }
+  for (const keyword of researchKeywords) {
+    const slug = slugify(keyword);
+    if (slug && !tags.has(slug)) tags.set(slug, { label: keyword, notes: [] });
   }
   await mkdir(path.join(distRoot, "tags"), { recursive: true });
   const tagLinks = [...tags]
@@ -384,17 +386,17 @@ async function main(): Promise<void> {
   const nowHtml = now
     ? `<section class="now"><h2>NOW</h2>${now.html}</section>`
     : "";
-  const recent = [...notes]
+  const recent = [...contentNotes]
     .sort((a, b) =>
       (b.updated ?? b.date ?? "").localeCompare(a.updated ?? a.date ?? ""),
     )
     .slice(0, 3);
-  const featured = (config.featuredWriting ?? []).map((reference) => notes.find((note) => note.title === reference || note.url === reference || note.relativePath.replace(/\\/g, "/") === reference)).filter((note): note is Note => Boolean(note));
+  const featured = (config.featuredWriting ?? []).map((reference) => contentNotes.find((note) => note.title === reference || note.url === reference || note.relativePath.replace(/\\/g, "/") === reference)).filter((note): note is Note => Boolean(note));
   const writing = [...featured, ...recent].filter((note, index, all) => all.findIndex((item) => item.url === note.url) === index).slice(0, 3);
   const homeBody = fill(indexTemplate, {
     TAGLINE: escapeHtml(config.tagline),
     INTRO: escapeHtml(config.intro ?? config.subtitle),
-    RESEARCH_KEYWORDS: researchKeywords.map((keyword, index) => `${index ? '<span aria-hidden="true">·</span>' : ""}<a href="/tags/${slugify(keyword)}/">${escapeHtml(keyword)}</a>`).join(""),
+    RESEARCH_KEYWORDS: researchKeywords.map((keyword, index) => `${index ? '<span aria-hidden="true">·</span>' : ""}<a href="/tags/${slugify(keyword)}/">${escapeHtml(tags.get(slugify(keyword))?.label ?? keyword)}</a>`).join(""),
     HOBBIES: (config.hobbies ?? []).map((hobby) => `<span>${escapeHtml(hobby)}</span>`).join(""),
     PROJECTS: (config.projects ?? []).slice(0, 3).map((project) => {
       let title = escapeHtml(project.title);

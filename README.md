@@ -7,7 +7,7 @@
 ## 网站内容
 
 - [首页](https://nomadjing.github.io/)：简介、项目和精选笔记
-- [文章归档](https://nomadjing.github.io/archive/)：已发布笔记
+- [笔记目录](https://nomadjing.github.io/notes/)：按目录浏览已发布笔记
 - [标签](https://nomadjing.github.io/tags/)：按主题浏览
 - [关于](https://nomadjing.github.io/about/)：更多个人信息
 

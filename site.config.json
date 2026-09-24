@@ -7,19 +7,21 @@
   "tagline": "Working notes on programs, proofs, and research.",
   "subtitle": "Jing Wang's notes on programs and research",
   "intro": "Hi, I'm Jing Wang, a graduate student at NJU Software Institute. I'm interested in static analysis, programming languages, and algorithms, especially how good models help us reason about real software. Right now, I'm studying lifecycle behavior in HarmonyOS applications and writing down what I learn along the way.",
-  "researchKeywords": "Static Analysis · Program Language · Algorithms",
+  "researchKeywords": "static-analysis · program-language · algorithms",
   "hobbies": ["rowing", "lifting", "long walks", "guitar", "films"],
   "projects": [
     {
-      "title": "HarmonyOS lifecycle analysis",
-      "description": "Exploring how lifecycle models shape the precision and cost of static analysis for HarmonyOS applications.",
-      "status": "research in progress"
+      "title": "ArkLifeguard",
+      "description": "A command-line static analysis tool for HarmonyOS/OpenHarmony ArkTS applications.",
+      "status": "research in progress",
+      "url":"https://github.com/nomadjing/ArkLifeguard"
     },
     {
-      "title": "This digital garden",
-      "description": "A small publishing space for connected notes, experiments, and unfinished ideas.",
-      "status": "ongoing"
+      "title": "IFDS-paper-reproduction",
+      "description": "This repository contains the reproduction of the IFDS (Interprocedural Finite Distributive Subset) analysis paper.",
+      "status": "ongoing",
+      "url":"https://github.com/nomadjing/IFDS-paper-reproduction"
     }
   ],
-  "featuredWriting": ["agent研究"]
+  "featuredWriting": []
 }
