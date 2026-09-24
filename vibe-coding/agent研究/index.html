@@ -1,0 +1,49 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>agent研究 · nomad_</title><meta name="description" content="不同的模型在处理不同的工作时能力如何,效率如何,消耗的token(成本多高),现在是如何评估的(数据集) 有没有工具能够评估提示词然后切换模型,如果有,他是怎么做到,是在哪个维度提升(成本,效率,能力) 把静态分析工具例如CHA作为agent的tool能不能提升agent对代码仓库的理解能力或者降低成本 ## `Ope"><script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script><link rel="stylesheet" href="/vendor/katex.min.css"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/knowledge.css"><script type="module" src="/main.js"></script></head><body><header class="site-header"><div class="site-location" title="nomad_/Vibe coding/agent研究"><a class="path-home" href="/">nomad_</a><span class="path-separator">/</span><a class="path-section" href="/vibe-coding/">Vibe coding</a><span class="path-separator">/</span><span class="path-current">agent研究</span></div><nav aria-label="Primary navigation"><a  href="/archive/">/archive</a><a  href="/tags/">/tags</a><a  href="/about/">/about</a><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">☾</button><button class="terminal-toggle" id="terminal-toggle" type="button" aria-controls="terminal" aria-expanded="false">&gt;_ terminal</button></nav></header><main><article><h1>agent研究</h1><dl class="metadata"></dl><div class="prose"><p>不同的模型在处理不同的工作时能力如何,效率如何,消耗的token(成本多高),现在是如何评估的(数据集)</p>
+<p>有没有工具能够评估提示词然后切换模型,如果有,他是怎么做到,是在哪个维度提升(成本,效率,能力)</p>
+<p>把静态分析工具例如CHA作为agent的tool能不能提升agent对代码仓库的理解能力或者降低成本</p>
+<h2><code>OpenAI能力方式划分</code></h2>
+<p>OpenAI 现在明确把三种 surface 分工为：</p>
+<p><strong>Chat</strong> = conversation / reasoning；</p>
+<p><strong>Work</strong> = 长时间、多步骤、需要检索、文件、浏览器和最终 deliverable 的 Agent；</p>
+<p><strong>Codex</strong> = software development / repository work。</p>
+<h2>比较模型：能力 × 成本 × 延迟</h2>
+<p>现在 OpenAI 自己其实已经把模型做成了明显的分层：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>定位</th>
+<th>建议任务</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>GPT-5.6 Luna</strong></td>
+<td>最快、最低成本</td>
+<td>grep 后总结、改名字、小修改、格式化、提取信息</td>
+</tr>
+<tr>
+<td><strong>GPT-5.6 Terra</strong></td>
+<td>性能/速度/成本平衡</td>
+<td>普通 coding、写测试、简单 bug、文档</td>
+</tr>
+<tr>
+<td><strong>GPT-5.6 Sol</strong></td>
+<td>强 reasoning</td>
+<td>跨文件修改、复杂 bug、算法、论文分析</td>
+</tr>
+<tr>
+<td><strong>GPT-6 Astra</strong></td>
+<td>当前最强一档</td>
+<td>困难研究问题、陌生大型 repo、复杂架构/bug、需要多步推理的问题</td>
+</tr>
+</tbody>
+</table>
+<p>这不是单纯经验判断，OpenAI 官方现在也是这么定位的：Luna 用于 focused/repetitive task，Terra 用于 everyday work，Sol 用于复杂 coding/research/professional work，而 Astra 用于最困难的 coding、research、analysis 和 problem solving。</p>
+<p>成本差距也很明显。例如 OpenAI 给出的 GPT-5.6 定位中，Luna 成本比 Sol 低约 80%，Terra 的目标则是以更低成本达到上一代强模型附近的能力。</p>
+<p>而是：</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mtext>Cost per successful task</mtext><mo>=</mo><mfrac><mtext>token cost + tool cost + time cost</mtext><mrow><mi>Pr</mi><mo>⁡</mo><mo stretchy="false">(</mo><mtext>task solved correctly</mtext><mo stretchy="false">)</mo></mrow></mfrac></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{ \text{Cost per successful task} = \frac{\text{token cost + tool cost + time cost}} {\Pr(\text{task solved correctly})} } 
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:2.9874em;vertical-align:-1.276em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.7114em;"><span style="top:-4.9874em;"><span class="pstrut" style="height:4.9874em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord text"><span class="mord">Cost per successful task</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3714em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mop">Pr</span><span class="mopen">(</span><span class="mord text"><span class="mord">task solved correctly</span></span><span class="mclose">)</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord text"><span class="mord">token cost + tool cost + time cost</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.936em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span><span style="top:-3.7114em;"><span class="pstrut" style="height:4.9874em;"></span><span class="stretchy fbox" style="height:2.9874em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.276em;"><span></span></span></span></span></span></span></span></span></span></p>
+<p>目前用于评估的数据集比较聚焦,没有通用的很好的评估集.</p>
+</div></article>
+</main><section class="terminal" id="terminal" aria-label="Site terminal" hidden><div class="terminal-heading"><span id="terminal-title">nomad / terminal</span><button class="terminal-close" id="terminal-close" type="button" aria-label="Close terminal">×</button></div><div class="terminal-output" id="terminal-output" aria-live="polite"></div><form id="terminal-form" autocomplete="off"><label class="terminal-prompt" for="terminal-input">nomad@home:<span id="terminal-cwd">~</span>$</label><input id="terminal-input" name="command" aria-label="Digital garden command" autocapitalize="none" autocomplete="off" spellcheck="false"></form><p class="terminal-help">Type help for commands · Esc to close</p></section></body></html>
