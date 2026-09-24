@@ -215,15 +215,51 @@ const terminalOutput = document.querySelector("#terminal-output");
 const terminalCwd = document.querySelector("#terminal-cwd");
 const terminalToggle = document.querySelector("#terminal-toggle");
 const terminalClose = document.querySelector("#terminal-close");
+const terminalResize = document.querySelector("#terminal-resize");
 const pageMain = document.querySelector("main");
 
-if (terminal && terminalForm && terminalInput && terminalOutput && terminalCwd && terminalToggle && terminalClose && pageMain) {
+if (terminal && terminalForm && terminalInput && terminalOutput && terminalCwd && terminalToggle && terminalClose && terminalResize && pageMain) {
   startTerminal().catch((error) => console.warn("Terminal could not start", error));
 }
 
 async function startTerminal() {
   let returnFocus = terminalToggle;
   let mainTop = 0;
+  const heightKey = "nomad-terminal-height";
+  const setHeight = (height) => {
+    const max = Math.floor(window.innerHeight * .75);
+    const value = Math.round(Math.max(Math.min(180, max), Math.min(height, max)));
+    terminal.style.setProperty("--terminal-height", `${value}px`);
+    return value;
+  };
+  const saveHeight = () => { try { localStorage.setItem(heightKey, String(Math.round(terminal.getBoundingClientRect().height))); } catch { /* optional preference */ } };
+  try {
+    const savedHeight = Number(localStorage.getItem(heightKey));
+    if (savedHeight > 0) setHeight(savedHeight);
+  } catch { /* optional preference */ }
+  terminalResize.addEventListener("pointerdown", (event) => {
+    if (!event.isPrimary) return;
+    event.preventDefault();
+    const startY = event.clientY;
+    const startHeight = terminal.getBoundingClientRect().height;
+    terminalResize.setPointerCapture(event.pointerId);
+    const move = (moveEvent) => setHeight(startHeight + startY - moveEvent.clientY);
+    const end = () => {
+      terminalResize.removeEventListener("pointermove", move);
+      terminalResize.removeEventListener("pointerup", end);
+      terminalResize.removeEventListener("pointercancel", end);
+      saveHeight();
+    };
+    terminalResize.addEventListener("pointermove", move);
+    terminalResize.addEventListener("pointerup", end);
+    terminalResize.addEventListener("pointercancel", end);
+  });
+  terminalResize.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    setHeight(terminal.getBoundingClientRect().height + (event.key === "ArrowUp" ? 20 : -20));
+    saveHeight();
+  });
   const focusCommandInput = () => {
     terminalInput.focus({ preventScroll: true });
     const end = terminalInput.value.length;

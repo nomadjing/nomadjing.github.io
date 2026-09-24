@@ -7,7 +7,6 @@ import { loadPublishedNotes } from "../src/content.js";
 import type { SiteConfig } from "../src/types.js";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const preview = process.argv.includes("--preview");
 const expectedRemote = /(?:github\.com[:/])nomadjing\/nomadjing\.github\.io(?:\.git)?$/i;
 
 function run(command: string, args: string[], cwd = projectRoot, env = process.env): void {
@@ -39,11 +38,6 @@ async function main(): Promise<void> {
     throw new Error("Build did not produce dist/index.html");
   }
   console.log(`[publish] Built public site in ${dist}`);
-  if (preview) {
-    console.log("[publish] Preview complete. No files were pushed.");
-    return;
-  }
-
   const remote = git(["remote", "get-url", "origin"]);
   if (!expectedRemote.test(remote)) {
     throw new Error(`origin must point to nomadjing/nomadjing.github.io; got ${remote}`);
