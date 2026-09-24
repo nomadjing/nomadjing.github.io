@@ -1,0 +1,25 @@
+{
+  "siteName": "nomad_",
+  "baseUrl": "https://nomadjing.github.io",
+  "contentRoot": "../Nomad",
+  "fallbackContentRoot": "./content",
+  "author": "nomad",
+  "tagline": "Working notes on programs, proofs, and research.",
+  "subtitle": "Jing Wang's notes on programs and research",
+  "intro": "Hi, I'm Jing Wang, a graduate student at NJU Software Institute. I'm interested in static analysis, programming languages, and algorithms, especially how good models help us reason about real software. Right now, I'm studying lifecycle behavior in HarmonyOS applications and writing down what I learn along the way.",
+  "researchKeywords": "Static Analysis · Program Language · Algorithms",
+  "hobbies": ["rowing", "lifting", "long walks", "guitar", "films"],
+  "projects": [
+    {
+      "title": "HarmonyOS lifecycle analysis",
+      "description": "Exploring how lifecycle models shape the precision and cost of static analysis for HarmonyOS applications.",
+      "status": "research in progress"
+    },
+    {
+      "title": "This digital garden",
+      "description": "A small publishing space for connected notes, experiments, and unfinished ideas.",
+      "status": "ongoing"
+    }
+  ],
+  "featuredWriting": ["agent研究"]
+}
