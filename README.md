@@ -4,6 +4,8 @@
 
 我是 Jing Wang，南京大学软件学院的研究生。这里记录我在静态分析、程序语言、算法和软件工程研究中的阅读、实验与想法。
 
+**感谢codex的大力支持,本项目完全使用codex开发。**
+
 ## 网站内容
 
 - [首页](https://nomadjing.github.io/)：简介、项目和精选笔记
@@ -13,9 +15,23 @@
 
 网站使用 TypeScript 构建静态页面，发布到 GitHub Pages 的 `gh-pages` 分支。源码位于 `main` 分支；
 
-**感谢codex的大力支持,本项目没有使用现成的博客框架。**
+## 使用方法
 
-## 本地查看
+在本项目中新建文件夹 `content/`，存放笔记.或者,在site.config.json中设置CONTENT_ROOT为你笔记的目录,就可以直接使用你已有的笔记仓库了。
+
+注意笔记的格式需要为 Markdown，且每篇笔记的开头需要有 YAML frontmatter，只有设置了 `publish: true` 的笔记才会被发布。示例：
+
+```markdown
+---
+title: "笔记标题"
+date: 2024-06-01
+tags: ["标签1", "标签2"]
+publish: true
+---
+笔记内容...
+```
+
+## 本地浏览
 
 需要 Node.js 22。克隆仓库后运行：
 
@@ -24,9 +40,9 @@ npm ci
 npm run dev
 ```
 
-打开 <http://127.0.0.1:4173>。`dev` 会先执行一次构建并提供本地服务；修改源码或笔记后，重新运行命令才能看到新内容。如果只想生成静态文件，运行 `npm run build`，结果在 `dist/`。
+打开 <http://127.0.0.1:4173>。`dev` 会先执行一次构建并提供本地服务；修改源码或笔记后，重新运行命令才能看到新内容。
 
-默认从相邻的 `../Nomad` 读取笔记(只是个人为了方便而设置的,不具有通用性)；如果该目录没有可发布笔记，构建会尝试使用仓库内的 `content/`。也可用 `CONTENT_ROOT=/你的/笔记目录 npm run dev` 指定来源。要发布某篇笔记，在 YAML frontmatter 中设置 `publish: true`。
+如果只想生成静态文件，运行 `npm run build`，结果在 `dist/`。
 
 ## 发布
 
