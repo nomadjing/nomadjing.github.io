@@ -302,6 +302,15 @@ if (
 async function startTerminal() {
   let returnFocus = terminalToggle;
   let mainTop = 0;
+  const commandHistory = [];
+  let historyIndex = 0;
+  let cwd = "/";
+  let initialCwd = "/";
+  try {
+    sessionStorage.removeItem("nomad-terminal");
+  } catch {
+    /* old session data may be unavailable */
+  }
   const heightKey = "nomad-terminal-height";
   const setHeight = (height) => {
     const max = Math.floor(window.innerHeight * 0.75);
@@ -380,6 +389,12 @@ async function startTerminal() {
   const closeTerminal = () => {
     if (terminal.hidden) return;
     const restoreScroll = mainTop + pageMain.scrollTop;
+    terminalOutput.replaceChildren();
+    terminalInput.value = "";
+    commandHistory.length = 0;
+    historyIndex = 0;
+    cwd = initialCwd;
+    terminalCwd.textContent = cwd === "/" ? "~" : `~${cwd}`;
     terminal.hidden = true;
     terminalToggle.setAttribute("aria-expanded", "false");
     document.body.classList.remove("terminal-open");
@@ -415,7 +430,7 @@ async function startTerminal() {
     return response.json();
   });
   const notes = garden.notes ?? [];
-  const directories = new Set(["/", "/archive", "/about", "/tags"]);
+  const directories = new Set(["/", "/notes", "/about", "/tags"]);
   for (const note of notes) {
     const segments = cleanPath(note.path).split("/").filter(Boolean);
     for (let index = 1; index < segments.length; index += 1)
@@ -454,26 +469,16 @@ async function startTerminal() {
   ];
   const coffeeArt =
     "    ( (\n     ) )\n  ........\n  |      |]\n  \\      /\n   `----'";
-  const saved = readTerminalState();
-  const commandHistory = Array.isArray(saved.history)
-    ? saved.history.slice(-40)
-    : [];
-  const logLines = Array.isArray(saved.lines) ? saved.lines.slice(-60) : [];
-  let historyIndex = commandHistory.length;
-  let cwd = "/";
-
-  const save = () => {
-    try {
-      sessionStorage.setItem(
-        "nomad-terminal",
-        JSON.stringify({
-          history: commandHistory.slice(-40),
-          lines: logLines.slice(-60),
-        }),
-      );
-    } catch {
-      /* session history is optional */
+  let coffeeOrder = [];
+  const nextCoffeeJoke = () => {
+    if (!coffeeOrder.length) {
+      coffeeOrder = [...coffeeJokes.keys()];
+      for (let index = coffeeOrder.length - 1; index > 0; index -= 1) {
+        const swap = Math.floor(Math.random() * (index + 1));
+        [coffeeOrder[index], coffeeOrder[swap]] = [coffeeOrder[swap], coffeeOrder[index]];
+      }
     }
+    return coffeeJokes[coffeeOrder.pop()];
   };
   const appendLine = (text, type = "") => {
     const line = document.createElement("div");
@@ -484,8 +489,6 @@ async function startTerminal() {
 
   const print = (text = "", type = "") => {
     appendLine(text, type);
-    logLines.push({ text, type });
-    save();
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
   };
   const showCwd = () => {
@@ -539,18 +542,16 @@ async function startTerminal() {
   const pageNote = notes.find(
     (note) => notePath(note).toLowerCase() === pagePath.toLowerCase(),
   );
-  cwd = pageNote
+  initialCwd = pageNote
     ? parentPath(notePath(pageNote))
     : (canonicalDirectory(pagePath) ?? "/");
-  for (const line of logLines) appendLine(line.text, line.type);
-  if (logLines.length) terminalOutput.scrollTop = terminalOutput.scrollHeight;
+  cwd = initialCwd;
   const run = (rawCommand) => {
     const raw = rawCommand.trim();
     if (!raw) return;
     print(`nomad@home:${cwd === "/" ? "~" : `~${cwd}`}$ ${raw}`, "command");
     commandHistory.push(raw);
     historyIndex = commandHistory.length;
-    save();
     const [name = "", ...args] =
       raw
         .match(/"[^"]*"|'[^']*'|\S+/g)
@@ -615,7 +616,7 @@ async function startTerminal() {
         break;
       }
       case "cat": {
-        const note = findNote(argument);
+        const note = argument.toLowerCase() === "about" ? garden.about : findNote(argument);
         if (!note || !["about", "now"].includes(argument.toLowerCase()))
           print("cat: available public documents are about and now", "error");
         else
@@ -649,12 +650,10 @@ async function startTerminal() {
         break;
       case "clear":
         terminalOutput.replaceChildren();
-        logLines.length = 0;
-        save();
         break;
       case "coffee":
         print(
-          `${coffeeArt}\n\n${coffeeJokes[Math.floor(Math.random() * coffeeJokes.length)]}`,
+          `${coffeeArt}\n\n${nextCoffeeJoke()}`,
           "hint",
         );
         break;
@@ -739,12 +738,4 @@ function depthFrom(value, root) {
     cleanPath(value).split("/").filter(Boolean).length -
     (root === "/" ? 0 : cleanPath(root).split("/").filter(Boolean).length)
   );
-}
-
-function readTerminalState() {
-  try {
-    return JSON.parse(sessionStorage.getItem("nomad-terminal") ?? "{}");
-  } catch {
-    return {};
-  }
 }

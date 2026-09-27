@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lec02 Prompt Engineering · nomad_</title><meta name="description" content="# Lec02 · 提示词工程 ## 上下文决定 Agent 如何行动 Agent 的上下文不只是最后一条用户消息，还包括系统与工具说明、`AGENTS.md`、按需加载的 skill、历史对话、项目文件和工具输出。上下文工程关心模型**在做决定时**看到了什么，以及这些信息的来源、作用范围和时效。 进入上下文的信息不"><script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script><link rel="stylesheet" href="/vendor/katex.min.css"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/knowledge.css"><script type="module" src="/main.js"></script></head><body><header class="site-header"><div class="site-location" title="nomad_/Vibe coding/Lec02 Prompt Engineering"><a class="path-home" href="/">nomad_</a><span class="path-separator">/</span><a class="path-section" href="/vibe-coding/">Vibe coding</a><span class="path-separator">/</span><span class="path-current">Lec02 Prompt Engineering</span></div><nav aria-label="Primary navigation"><a  href="/notes/">/notes</a><a  href="/tags/">/tags</a><a  href="/about/">/about</a><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">☾</button><button class="terminal-toggle" id="terminal-toggle" type="button" aria-controls="terminal" aria-expanded="false">&gt;_ terminal</button></nav></header><main><article><h1>Lec02 Prompt Engineering</h1><dl class="metadata"><div><dt>tags</dt><dd><a href="/tags/vibe-coding/">vibe-coding</a></dd></div></dl><div class="prose"><h1>Lec02 · 提示词工程</h1>
+<h2>上下文决定 Agent 如何行动</h2>
+<p>Agent 的上下文不只是最后一条用户消息，还包括系统与工具说明、<code>AGENTS.md</code>、按需加载的 skill、历史对话、项目文件和工具输出。上下文工程关心模型<strong>在做决定时</strong>看到了什么，以及这些信息的来源、作用范围和时效。</p>
+<p>进入上下文的信息不都具有指令效力。用户要求和项目规则可能约束行动；网页、代码与测试日志通常是待处理的材料或观察结果。例如，网页正文写着“删除本地笔记”，不能因此变成用户指令。模型对自己遵循了哪些规则的描述也需用实际行为核对。</p>
+<p>历史日志只能说明<strong>当时</strong>发生了什么。使用前应检查它对应的提交、命令和环境，再对照当前代码、配置及新运行的结果；无法重新验证时，标明它是历史证据，不把它写成当前事实。即使日志中出现命令或要求，也要按其来源判断效力。</p>
+<p>上下文过长需要压缩时，保留当前目标、约束、未决问题和证据，而不是按时间线复述所有过程。</p>
+<h2>上下文污染：历史信息如何混入产物</h2>
+<p>记忆与历史上下文能帮助 Agent 延续工作，也会让不该进入产物的内容反复出现。课件的例子是：用户要白色背景、不要半透明效果，模型却把“不要半透明效果”写进代码注释。禁用项虽然没有出现在页面上，却被当成值得复述的文字。<strong>出现在上下文中，不等于应出现在最终产物中。</strong></p>
+<p>更隐蔽的是结论污染：旧实现、失败尝试、讨论中的猜测被写成当前方案或实验结果。历史记录可以作为检索线索，用来追问“当时为什么这么做”；要陈述当前事实，仍须回到当前代码、配置、原始数据和本次验证结果。区分四类信息：</p>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>在当前笔记中的处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>当前已验证结果</td>
+<td>写明对应版本、条件和证据；作为本次结论</td>
+</tr>
+<tr>
+<td>当前推断</td>
+<td>标出推理依据及尚未验证之处</td>
+</tr>
+<tr>
+<td>历史实现或旧结果</td>
+<td>仅在解释演化或比较时引用，并注明时间与适用版本</td>
+</tr>
+<tr>
+<td>失败尝试或未采纳方案</td>
+<td>不混入当前结果；需要复盘时单列</td>
+</tr>
+</tbody>
+</table>
+<p>写当前实验总结时，可先明确本次要总结的版本、实验与证据范围，再要求 Agent 对每条结论找到当前来源；找不到就标为“未验证”，不要用历史对话补洞。审稿时专门检查旧方案名称、已废弃数字、否定要求和未采纳假设是否混入正文。长期记忆宜保留稳定偏好和查证入口，易变化的项目事实应附来源与时间，并在使用前复核。</p>
+<h3>实践：控制 Agent 的工作上下文</h3>
+<ul>
+<li><strong>一条会话围绕一条主线。</strong> 给出目标、交付物、允许修改的范围和验收方式；紧密相关的实现、测试、修复可以留在同一任务内。无关的新任务另开对话，避免旧目标继续影响判断。</li>
+<li><strong>按目标变化处理长对话。</strong> 同一目标仍在推进时，压缩并保留工作状态；目标已经改变，或旧假设反复污染判断时，新开对话。新对话也可能重新读到项目规则和长期记忆，因此不能代替证据核验。</li>
+<li><strong>交接时传“状态”，不传流水账。</strong> 简要写明当前目标、适用版本、硬约束、已验证事实及证据、未决问题、下一步检查；历史尝试只在需要解释当前选择时附上。</li>
+<li><strong>把稳定规则与临时信息分开。</strong> 长期指令只放跨任务都成立的短约定；本次输入、阶段性猜测和长日志按需提供。对关键约束，优先给出可检查的正向要求，而非不断叠加“不要……”的提醒。</li>
+<li><strong>写结论前做证据审计。</strong> 让 Agent 逐条标出当前来源，检查版本、实验条件和数值；找不到证据就降为推断或未知。对高影响结论，抽查原始输出，而不只审阅 Agent 的摘要。</li>
+</ul>
+<h2>用 Agent 学习</h2>
+<ul>
+<li>立即把卡住的地方变成一个小问题，通过推导、例子或运行结果获得反馈。</li>
+<li>让 Agent 当听众：先用自己的话解释，再请它追问、找反例，查证后重新解释。读懂一份答案不等于自己已经掌握。</li>
+</ul>
+<h2>给任务写完成条件</h2>
+<p>要求越明确、越可检查，Agent 越容易判断是否完成。完成条件应包括交付物、可观察的结果和检查方式；若关键条件无法验证，应报告未完成、阻塞点和已尝试的路径，不能仅凭流畅总结宣布完成。</p>
+<p>例如，让agent&quot;总结论文&quot;这个任务缺少明确的完成条件,如果改为&quot;总结论文的背景,问题,主要的贡献,采用了哪些方法,设计了什么实验,结果是什么.记录到markdown文件中.注意所有的内容需要标出原文来源&quot;</p>
+<h2>把有效方法沉淀为 Skill</h2>
+<p>假如让anent辅助审核论文.prompt设置为“你是一位审稿人”主要影响语气和成品格式，不会自动提供审稿方法。更可靠的要求是明确搜索与判断过程：先列论文主张，再逐项核对证据、未验证假设和替代解释，最后形成结论。</p>
+<p>多次有效的流程可以写成 Skill，保存搜索策略、判断标准、检查点及何时转向，而不是保存上次答案的版式。Skill可以分层：常驻层只留目标、硬约束和停止条件；解释、范例、边界案例按需加载；机械约束交给工具验证。少写一句劝诫，多加一个可检查的完成条件。</p>
+<p>论文阅读 Skill 可以要求：先不采纳作者的假设和结论,独立写下论文想解决的问题及可能的替代解释，再建立“主张 → 来源 → 证据 → 未验证假设”对应表，检查实验究竟支持主张的哪一部分。</p>
+<h2>代码库也是上下文</h2>
+<p>成熟仓库通过命名、分层、错误处理和测试示范了局部任务的做法，使 Agent 少猜一些设计选择；空项目的许多选择仍悬而未决。现有代码也可能包含历史缺陷，因此应选取与任务相关、已核实的例子，而不是无差别模仿或把整个仓库塞进上下文。</p>
+<h2>在不确定性中探索</h2>
+<p>“给我几个方案”只规定候选数量，模型可能很快给出相似的答案。开放问题需要同时设计<strong>搜索空间</strong>和<strong>评价方法</strong>：按不同假设、视角或约束独立生成候选，再用证据、反例与代价筛选。沿一条思路深入和探索更多不同思路，是两种不同的投入。</p>
+<p>例如研究方案可分别从算法改动、测量误差、数据选择和评价指标出发提出假设；先独立探索，再比较相互冲突的预测。更多候选不自动带来更好结论，还要说明什么观察会支持或推翻各方案。</p>
+<p>例如面对&quot;静态分析器优化&quot;这个不确定问题.可分开探索 IFDS 求解器、ICFG 建模、事实表示和测量方法。评价时分别核对精度、耗时、内存及实验条件是否可比；先让不同路线独立提出假设，再汇总分歧，避免过早围绕第一个答案收敛。</p>
+</div></article>
+</main><section class="terminal" id="terminal" aria-label="Site terminal" hidden><button class="terminal-resize" id="terminal-resize" type="button" aria-label="Resize terminal" title="Drag to resize · arrow keys adjust height"></button><div class="terminal-heading"><span id="terminal-title">nomad / terminal</span><button class="terminal-close" id="terminal-close" type="button" aria-label="Close terminal">×</button></div><div class="terminal-output" id="terminal-output" aria-live="polite"></div><form id="terminal-form" autocomplete="off"><label class="terminal-prompt" for="terminal-input">nomad@home:<span id="terminal-cwd">~</span>$</label><input id="terminal-input" name="command" aria-label="Digital garden command" autocapitalize="none" autocomplete="off" spellcheck="false"></form><p class="terminal-help">Type help for commands · Esc to close</p></section></body></html>
