@@ -1,0 +1,62 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lec03 版本管理 · nomad_</title><meta name="description" content="# Lec03 · 版本管理 ## 项目快照与提交 **项目由围绕明确意图的原子变更推进；Git 保存项目快照及其来路，使变更能够恢复、比较、分支和合并。** 项目目录保存当前文件；版本管理还要记录项目经历过哪些状态、状态之间怎样关联，以便恢复、比较和协作。Git 的一次提交记录**被纳入版本管理的项目快照**：文件当"><script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script><link rel="stylesheet" href="/vendor/katex.min.css"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/knowledge.css"><script type="module" src="/main.js"></script></head><body><header class="site-header"><div class="site-location" title="nomad_/Vibe coding/Lec03 版本管理"><a class="path-home" href="/">nomad_</a><span class="path-separator">/</span><a class="path-section" href="/vibe-coding/">Vibe coding</a><span class="path-separator">/</span><span class="path-current">Lec03 版本管理</span></div><nav aria-label="Primary navigation"><a  href="/notes/">/notes</a><a  href="/tags/">/tags</a><a  href="/about/">/about</a><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">☾</button><button class="terminal-toggle" id="terminal-toggle" type="button" aria-controls="terminal" aria-expanded="false">&gt;_ terminal</button></nav></header><main><article><h1>Lec03 版本管理</h1><dl class="metadata"><div><dt>tags</dt><dd><a href="/tags/vibe-coding/">vibe-coding</a></dd></div></dl><div class="prose"><h1>Lec03 · 版本管理</h1>
+<h2>项目快照与提交</h2>
+<p><strong>项目由围绕明确意图的原子变更推进；Git 保存项目快照及其来路，使变更能够恢复、比较、分支和合并。</strong></p>
+<p>项目目录保存当前文件；版本管理还要记录项目经历过哪些状态、状态之间怎样关联，以便恢复、比较和协作。Git 的一次提交记录<strong>被纳入版本管理的项目快照</strong>：文件当时的内容及其目录位置。提交之间的来路构成可追溯的历史。</p>
+<p>以项目为单位保存快照，是因为源码、接口和配置可能必须配套。只恢复旧源码而留下新配置，可能拼出一个历史上从未正常运行的状态。删除已提交的文件并再次提交后，新快照不包含它，旧快照仍可保留它。</p>
+<p>编辑文件并保存，只改变当前文件；只有把所需内容纳入提交，才在 Git 历史中留下可回到的检查点。</p>
+<blockquote>
+<p>Git 快照只包含纳入版本管理的内容，不会自动保存操作系统、已安装工具或环境变量。需要重建环境时，应维护相应的配置、依赖声明与构建说明。</p>
+</blockquote>
+<h2>工作区、暂存区与提交历史</h2>
+<p><code>git init</code> 在当前目录建立尚无提交的仓库；<code>git clone</code> 从已有仓库建立本地副本。记录本地版本不以 GitHub 或 GitLab 为前提。</p>
+<ul>
+<li><strong>工作区</strong>：当前正在编辑的文件。</li>
+<li><strong>暂存区（Index）</strong>：下一次提交准备采用的文件内容。</li>
+<li><strong>提交历史</strong>：已经记录下来的项目快照。</li>
+</ul>
+<p><code>git add hello.c</code> 把执行那一刻的文件内容放进暂存区。若之后继续修改 <code>hello.c</code>，普通的 <code>git commit</code> 仍提交暂存区中的旧内容；要纳入新修改，需再次 <code>git add hello.c</code>。会运行命令，还应能预测命令改变了哪一层状态。</p>
+<h2>项目应保存什么</h2>
+<p>“目录里有什么”和“项目需要共同保存什么”是不同问题。提交前逐个判断文件的用途：它是否表达项目意图，其他人是否需要它，以及能否由已保存的输入和构建方法重建。</p>
+<ul>
+<li>源码与必要的构建说明通常要保存；编译产物、运行日志和临时文件通常无需保存，避免与源码形成两份不一致的状态。</li>
+<li>个人路径和偏好通常不应成为共享配置；可移植的团队配置可以保存。密钥不应进入仓库。</li>
+<li>规则取决于用途：依赖锁文件、生成的头文件或发布产物，在特定项目中可能需要保存。</li>
+</ul>
+<p><code>.gitignore</code> 用于忽略未被跟踪的文件；它不会使已跟踪的文件自动退出版本管理，也不会抹除历史。</p>
+<h2>原子变更：一次修改围绕一个意图</h2>
+<p>项目由一系列快照推进。一次原子变更应围绕一个明确意图，包含为实现它所需的代码、相关测试及说明，使别人能独立理解、验证、审查和撤销。原子指意图完整，不等于只改一个文件。</p>
+<p>同一修复所需的实现、回归测试和说明可以放在一次变更中，无关的格式调整应另作变更。提交说明交代行为变化与理由，diff 展示具体改法。边界清楚的变更更利于 review、revert 和 bisect；仅把混乱的提交排成线性历史，并不会让它们变得可理解。</p>
+<h2>分支与合并</h2>
+<p>分支名是指向某次提交的可移动引用。开发者或 Agent 可以从同一个项目快照出发，分别推进变更；合并时需要把这些变更组合成新的项目状态。分开工作降低互相等待的成本，但组合结果仍需检查。</p>
+<p>发生文本冲突时，Git 会把双方内容及冲突标记写入工作区文件，并在 <code>git status</code> 中显示冲突状态。解决冲突要查看实际文件、决定最终内容，再标记为已解决；只知道 <code>git merge</code> 命令而没有观察其结果，难以判断仓库此时处于什么状态。</p>
+<p><code>merge</code> 汇合分开的历史；<code>rebase</code> 则把一串变更依次重放到新的起点，通常会生成新的提交标识，也可能发生冲突。整理历史前要知道哪些提交已成为他人的工作依据。</p>
+<h2>从补丁到交付</h2>
+<p>接手已有项目时，一次修复要从问题描述和指定版本出发：理解并复现现象，找到相关实现，修改后验证新问题已解决，同时检查原有行为。SWE-bench 中的 <code>FAIL_TO_PASS</code> 与 <code>PASS_TO_PASS</code> 分别对应这两类检查。</p>
+<p>**案例：Astropy 的嵌套模型错误。**最终代码修复很小，实际工作却包括定位依赖矩阵错误、补测试、更新说明、审查合并和交付。它说明补丁行数无法衡量理解、验证与集成的工作量。</p>
+<h2>Agent 协作：先收敛架构，再有限并行</h2>
+<p>架构阶段先集中讨论接口、约束和不变量，再把共识写成文档、规则、示例及测试要求。共同前提清楚后，才能把相对独立的实现任务交给多个 Agent 并行推进。</p>
+<p>实现阶段控制并发数量，尽量分配不冲突的任务，并明确历史整理与集成规则。每轮产出都及时检查；有界面时还要做视觉验收。并发提高产出速度，也增加组合与反馈的负担，不能让未经确认的设计选择长期积累。</p>
+<h2>文本可合并，不代表约束仍成立</h2>
+<p>两个变更基于同一快照分别完成，即使修改不同文件、没有文本冲突，组合结果也可能违反项目不变量。这类问题类似数据库中的 write skew。</p>
+<p>**反例：至少一人值班。**初始甲、乙都在岗；Agent A 见乙在岗便让甲离岗，Agent B 见甲在岗便让乙离岗。各自在旧快照上的决定看似合规，合并后却无人值班。文本可合并，不代表共同约束仍成立。</p>
+<p>因此，需要在组合后的确切版本上检查跨模块约束；各分支自己的测试通过，只能说明各自看到的版本通过了已有检查。</p>
+<h2>面向 Agent 的变更准入设想</h2>
+<p>课件提出的思想实验：若 Agent 生成代码远快于人工理解与验收，瓶颈会转向变更的组合、验证和准入。系统可让 Agent 在独立快照上生成候选变更，先与当前主线组合并验证，再原子地发布<strong>被验证的那个确切版本</strong>；若主线已前进，须重新组合与验证。耗时的生成、测试在锁外进行，锁只保护短暂的版本读取或发布。</p>
+<p>MVCC 提供多个版本下并发工作的参照；change algebra 进一步追问变更能否组合、交换顺序或依赖前置变更。两者都不能代替项目不变量的定义与验证。这里是未来工作方式的设计设想，不是已由课件实验验证的通用方案。</p>
+<h2>学习方法：留意细节</h2>
+<blockquote>
+<p>[!tip] Insights
+创造力需要正确的概念和理解。
+对世界建立正确的概念和理解，是具有发散和创造能力的前提。</p>
+</blockquote>
+<p>课外有大量高密度的项目和资料；浏览本身不会自动形成理解。每次阅读都可以带着一个具体问题：<strong>哪个细节是自己动手时想不到的？</strong></p>
+<ul>
+<li><strong>先在脑中实现（Virtually Implement）</strong>：看到问题，先想自己会如何设计、需要什么前提，再看作者怎样做。若不同，追问差异来自哪个约束或经验。</li>
+<li><strong>预测，再观察</strong>：读代码时预测下一步，运行 Git 命令前预测工作区、暂存区或历史会怎样变化；操作后检查真实结果。会背命令不等于理解它。</li>
+<li><strong>对小细节多问一句为什么</strong>：目录、文件去留、命名和检查规则都有设计理由。先识别各部分的作用，再判断是否符合项目约定，而不是机械模仿。</li>
+</ul>
+<p>微小的格式偏好也应有可说明的理由：它是否方便区分角色和引用，又是否符合项目约定与工具要求。学习 Git 时，可以先预测 <code>add</code> 或 <code>commit</code> 的效果，再在真实仓库中观察对象、引用与工作区的变化；可视化只有和预测、核对结合，才帮助建立概念。</p>
+<h2>学习方法：下一步迭代</h2>
+<p>一个问题解决后，继续追问当前方案还依赖什么、在什么条件下会失效。能运行后，追问为何需要 <code>.gitignore</code>；文件齐全后，追问为何换机器仍不能构建。把新疑问落到具体文件和行为上，寻找下一层知识，再用新的理解改进做法。</p>
+</div></article>
+</main><section class="terminal" id="terminal" aria-label="Site terminal" hidden><button class="terminal-resize" id="terminal-resize" type="button" aria-label="Resize terminal" title="Drag to resize · arrow keys adjust height"></button><div class="terminal-heading"><span id="terminal-title">nomad / terminal</span><button class="terminal-close" id="terminal-close" type="button" aria-label="Close terminal">×</button></div><div class="terminal-output" id="terminal-output" aria-live="polite"></div><form id="terminal-form" autocomplete="off"><label class="terminal-prompt" for="terminal-input">nomad@home:<span id="terminal-cwd">~</span>$</label><input id="terminal-input" name="command" aria-label="Digital garden command" autocapitalize="none" autocomplete="off" spellcheck="false"></form><p class="terminal-help">Type help for commands · Esc to close</p></section></body></html>
