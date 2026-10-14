@@ -243,7 +243,6 @@ async function main(): Promise<void> {
       ? `<section class="backlinks"><h2>Referenced by</h2><ul>${incoming.map((source) => `<li>→ <a href="${source.url}">${escapeHtml(source.title)}</a></li>`).join("")}</ul></section>`
       : "";
     const body = fill(noteTemplate, {
-      TITLE: escapeHtml(note.title),
       METADATA: metadata(note),
       CONTENT: note.html,
       BACKLINKS: backlinksHtml,
@@ -394,6 +393,7 @@ async function main(): Promise<void> {
   const featured = (config.featuredWriting ?? []).map((reference) => contentNotes.find((note) => note.title === reference || note.url === reference || note.relativePath.replace(/\\/g, "/") === reference)).filter((note): note is Note => Boolean(note));
   const writing = [...featured, ...recent].filter((note, index, all) => all.findIndex((item) => item.url === note.url) === index).slice(0, 3);
   const homeBody = fill(indexTemplate, {
+    DISPLAY_NAME: escapeHtml(config.displayName ?? config.author),
     TAGLINE: escapeHtml(config.tagline),
     INTRO: escapeHtml(config.intro ?? config.subtitle),
     RESEARCH_KEYWORDS: researchKeywords.map((keyword, index) => `${index ? '<span aria-hidden="true">·</span>' : ""}<a href="/tags/${slugify(keyword)}/">${escapeHtml(tags.get(slugify(keyword))?.label ?? keyword)}</a>`).join(""),

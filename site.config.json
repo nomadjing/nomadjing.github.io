@@ -4,9 +4,10 @@
   "contentRoot": "../Nomad",
   "fallbackContentRoot": "./content",
   "author": "nomad",
-  "tagline": "Working notes on programs, proofs, and research.",
+  "displayName": "nomad's blog",
+  "tagline": "Programs, proofs & research.",
   "subtitle": "Jing Wang's notes on programs and research",
-  "intro": "Hi, I'm Jing Wang, a graduate student at NJU Software Institute. I'm interested in static analysis, programming languages, and algorithms, especially how good models help us reason about real software. Right now, I'm studying lifecycle behavior in HarmonyOS applications and writing down what I learn along the way.",
+  "intro": "Hi, I'm Jing Wang, a graduate student at NJU Software Institute, studying static analysis and programming languages. My current research explores lifecycle behavior in HarmonyOS applications. This is where I keep notes from papers, experiments, and things I'm learning.",
   "researchKeywords": "static-analysis · program-language · algorithms",
   "hobbies": ["rowing", "lifting", "long walks", "guitar", "films"],
   "projects": [
@@ -18,7 +19,7 @@
     },
     {
       "title": "IFDS-IDE-reproduction",
-      "description": "This repository contains the reproduction of the IFDS (Interprocedural Finite Distributive Subset) analysis paper.",
+      "description": "Reproducing the IFDS and IDE algorithms for interprocedural program analysis.",
       "status": "ongoing",
       "url":"https://github.com/nomadjing/IFDS-IDE-reproduction"
     }
