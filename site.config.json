@@ -17,10 +17,10 @@
       "url":"https://github.com/nomadjing/ArkLifeguard"
     },
     {
-      "title": "IFDS-paper-reproduction",
+      "title": "IFDS-IDE-reproduction",
       "description": "This repository contains the reproduction of the IFDS (Interprocedural Finite Distributive Subset) analysis paper.",
       "status": "ongoing",
-      "url":"https://github.com/nomadjing/IFDS-paper-reproduction"
+      "url":"https://github.com/nomadjing/IFDS-IDE-reproduction"
     }
   ],
   "featuredWriting": []
