@@ -1,0 +1,193 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lec04 版本管理（2） · nomad_</title><meta name="description" content="# Lec04 · 版本管理（2） 版本管理的设计取决于我们怎样理解项目：需要保存哪些状态、表达哪些关系，以及怎样协调修改。本讲从文件与制品关系出发，进一步讨论变化的身份、Agent 协作和用最小可行产品检验设计。 ## 文件保存内容，制品之间还需要可追踪性 需求、规格、代码、测试和设计文档等开发产物，统称为软件工程制"><script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script><link rel="stylesheet" href="/vendor/katex.min.css"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/knowledge.css"><script type="module" src="/main.js"></script></head><body><header class="site-header"><div class="site-location" title="nomad_/Vibe coding/Lec04 版本管理（2）"><a class="path-home" href="/">nomad_</a><span class="path-separator">/</span><a class="path-section" href="/vibe-coding/">Vibe coding</a><span class="path-separator">/</span><span class="path-current">Lec04 版本管理（2）</span></div><nav aria-label="Primary navigation"><a  href="/notes/">/notes</a><a  href="/tags/">/tags</a><a  href="/about/">/about</a><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">☾</button><button class="terminal-toggle" id="terminal-toggle" type="button" aria-controls="terminal" aria-expanded="false">&gt;_ terminal</button></nav></header><main><article><h1>Lec04 版本管理（2）</h1><dl class="metadata"><div><dt>tags</dt><dd><a href="/tags/vibe-coding/">vibe-coding</a></dd></div></dl><div class="prose"><h1>Lec04 · 版本管理（2）</h1>
+<p>版本管理的设计取决于我们怎样理解项目：需要保存哪些状态、表达哪些关系，以及怎样协调修改。本讲从文件与制品关系出发，进一步讨论变化的身份、Agent 协作和用最小可行产品检验设计。</p>
+<h2>文件保存内容，制品之间还需要可追踪性</h2>
+<p>需求、规格、代码、测试和设计文档等开发产物，统称为软件工程制品（artifact）。文件让人和工具方便地编辑、搜索、比较这些内容，但目录位置本身不能充分表达它们之间的工程关系。</p>
+<p><strong>保存了所有文件及其版本，不等于知道每段实现服务于什么需求，也不等于知道需求变化会影响什么。</strong></p>
+<p>可追踪性（traceability）是识别和持续维护制品之间联系的能力。例如，某条规格细化哪项需求、哪个函数实现该规格、哪些测试验证它。沿这些联系，可以从需求查到实现与验证，也可以从代码反查其设计依据。</p>
+<p>以个人助手为例：</p>
+<ul>
+<li>需求：用户纠正偏好后，后续回答采用新偏好。</li>
+<li>规格：同一偏好键再次写入时，后写入值替换旧值。</li>
+<li>实现：更新偏好的函数。</li>
+<li>验证：先记录“详细回答”，再纠正为“简短回答”，检查后续回答是否采用新偏好。</li>
+</ul>
+<p>如果新增“偏好只在本次会话内有效”的要求，就需要沿关系检查规格中的作用域、存储与读取逻辑，以及会话结束后的测试。仅看到这些文件位于同一目录，无法直接确定影响范围。</p>
+<p>测试应同时覆盖：当前会话采用临时纠正，新会话不继承该临时纠正。新会话究竟恢复长期偏好还是默认值，要由规格明确；不能仅从“临时偏好失效”推断具体回退行为。</p>
+<p>Git 历史能帮助查询文件怎样变化；需求编号、文档链接、提交说明和测试关联可以补充制品之间的关系。这些关联必须随修改维护，否则旧说明可能与新实现脱节。文件也可以编码这些关系，局限在于普通目录树和版本快照不会自动提供它们。</p>
+<blockquote>
+<p>[!tip] Insights
+学习一种工具时，追问它选择了什么基本对象，又遗漏了什么关系。文件生态的成功不代表文件是项目唯一可能的组织方式。面向 Agent 的软件是否会直接组织需求、实现与证据，是本讲提出的可能未来方向</p>
+</blockquote>
+<h2>同一项变更，可以经历多个确切版本</h2>
+<p>Rebase 把修改重放到新的起点。开发者可能仍在完成同一项修复，但得到的提交已经改变：Git 的 commit 包含目录树、父提交和元数据，父提交变化就会产生不同的 commit ID，即使文件内容没有变化。</p>
+<p>例如，C 是基于 A 的“修复临时偏好跨会话泄漏”；主线推进到 B 后，把修复重放到 B 上得到 C′。C 和 C′表达同一项修复的延续，却处在不同基础上，不能当作同一个确切提交。</p>
+<pre class="hljs"><code>rebase 前（从父提交向后代阅读）：
+      C  修复分支
+     /
+A ── B  主线
+
+rebase 后：
+A ── B ── C′  修复分支
+     ↑
+    主线
+</code></pre>
+<p>修复分支现在基于 B；C′是新提交，主线仍指向 B。这里画的是当前分支关系，不表示旧 C 立即从对象库消失。</p>
+<p>Jujutsu（jj）把这两种身份分开表达：commit ID 标识某个确切提交，change ID 追踪持续演化的同一项变更。通常，修订或 rebase 会改变 commit ID，同时保留 change ID。这就是把 change 作为一等公民：工具能直接标识和追踪它，不必只靠人对照多个提交猜测它们的联系。</p>
+<p>Change ID 表达演化关系，不保证不同修订的代码、行为或测试结果相同。验收必须落在具体修订上；旧修订测试通过，不能直接证明新修订通过。jj 的底层仍保存快照，并不是只保存补丁文本。</p>
+<h2>把尚未解决的冲突保存为状态</h2>
+<p>Git 的常规 rebase 遇到冲突会暂停，通常需要解决当前冲突后才能继续重放后续提交。jj 允许把冲突记录在重写后的提交中，让 rebase 操作完成，再选择何时解决冲突；含冲突的提交仍可继续 rebase 或 merge。</p>
+<p>例如，把“立即保存”同时改成“手动确认后保存”和“每分钟自动保存”，工具无法直接确定最终行为。jj 可以保留这个尚未裁决的状态，先完成历史结构调整，之后再根据需求决定最终内容。保存的是冲突的逻辑表示，而不只是把冲突标记当普通文本提交。</p>
+<pre class="hljs"><code>Git 常规 rebase：
+重放修改 → 遇到冲突并暂停 → 解决冲突 → continue → 继续重放
+
+jj rebase：
+重放修改 → 冲突存入新提交 → rebase 完成
+                                 ↓
+                         之后解决冲突 → 验证
+</code></pre>
+<p>图中 jj 的“完成”只指 rebase 操作。<strong>历史调整完成和内容冲突解决，是两件可以分别安排的事</strong>能保存、继续操作含冲突的状态，不代表程序已经可运行、满足需求或可以交付；还需检查未解决冲突，并完成内容裁决和验证。</p>
+<blockquote>
+<p>[!tip] Insights
+把原来只能卡在操作中途的情况，明确建模为可以保存和继续处理的状态，就能改变工作流。这里的收益是可以延后裁决并保留进度，冲突本身并没有因此消失。</p>
+</blockquote>
+<h2>Worktree：让并行任务各有工作目录</h2>
+<p>分支和 worktree 通常配合使用。分支是指向提交的可移动引用，用来保留不同开发路线；worktree 是实际编辑文件的工作目录及其工作状态。普通 clone 得到的项目目录就已经是一个主 worktree，<code>git worktree add</code> 用于增加工作目录。</p>
+<h3>一个人交替做任务：分支与一个工作目录</h3>
+<p>正在开发聊天界面，突然要修复线上登录 bug。聊天功能尚未完成，不应进入修复版本。可以先提交或 stash 当前修改，再从 main 建立 hotfix 分支修 bug；修好后切回 chat 继续开发。</p>
+<pre class="hljs"><code>始终使用同一个目录 assistant/：
+
+上午：HEAD → chat    文件是聊天功能版本
+          ↓ 保存当前修改，切换分支
+中午：HEAD → hotfix  文件换成登录修复版本
+          ↓ 完成修复，切回 chat
+下午：HEAD → chat    恢复聊天功能的开发现场
+</code></pre>
+<p>两条开发路线得以保留，但文件在同一目录中轮流展开。一个人一次只推进一件事时，这通常已经够用。</p>
+<h3>两个 Agent 同时工作：不同分支与不同工作目录</h3>
+<p>Agent A 继续开发聊天功能，Agent B 同时修登录 bug。假如它们都在 <code>assistant/</code> 中操作，即使存在 chat 和 hotfix 两个分支，B 切换分支也会改变 A 正在读取的工作文件；分支不属于某个终端或 Agent，当前检出状态属于工作目录。</p>
+<pre class="hljs"><code>同一目录中的两个终端：
+终端 A：assistant/ → 切到 chat
+终端 B：assistant/ → 切到 hotfix
+                         ↓
+终端 A 再读 assistant/，看到的也是切换后的文件
+（若未提交修改阻碍切换，Git 也可能直接拒绝切换。）
+</code></pre>
+<p>在项目目录中执行以下示例命令，可从 main 新建 hotfix 分支，并在相邻目录展开它；原目录继续保留 chat 的工作现场：</p>
+<pre class="hljs"><code>git worktree add -b hotfix ../assistant-hotfix main
+</code></pre>
+<pre class="hljs"><code>Agent A → assistant/         → chat   → 开发聊天功能
+Agent B → assistant-hotfix/  → hotfix → 修登录 bug
+</code></pre>
+<p>此时两边各有一份文件，可以同时编辑。一个人若要让聊天版本持续运行、同时去另一份目录修 bug，也适合这种安排。</p>
+<p>Git worktree 让同一仓库关联多个工作目录。每个 worktree 有自己的工作文件、HEAD 和暂存区，同时共享对象库和大部分引用。</p>
+<pre class="hljs"><code>                 共享 Git 仓库
+              对象库 / 分支引用
+                 /        \
+       worktree-ui       worktree-memory
+       HEAD → ui         HEAD → memory
+       自己的文件         自己的文件
+       自己的暂存区       自己的暂存区
+           ↑                  ↑
+        Agent A            Agent B
+</code></pre>
+<p>图中两套工作文件可以分别编辑；提交进入共享对象库后，另一边可引用该提交，但自己的工作文件不会自动包含它的修改。汇合成果仍需 merge 或 rebase，并验证组合后的版本。</p>
+<p>Worktree 隔离工作文件，不会自动协调接口、保证组合正确，也不会隔离外部数据库、端口等共享资源。</p>
+<p>多人各自 clone 后也能真正并行，因为每个 clone 已提供独立的工作目录；通常通过 push/fetch 交换提交。Worktree 则适合在本机为同一仓库增加工作目录，共享已有对象库。选择时分别考虑：是否需要保留不同开发路线，以及是否需要同时保留多套可编辑的文件。</p>
+<h2>并行修改：先各自做再整合，还是先上锁</h2>
+<p>Worktree 提供独立工作文件，但任务仍可能依赖相同接口。协调可以主要放在整合阶段，也可以在修改共享状态前通过互斥协议协调。课件提出“主 Agent 规划，子 Agent 上锁开干”作为值得探索的协作方案；它不是所有 Agent 项目都应采用的既定结论。</p>
+<p>例如，旧接口 <code>loadMemory()</code> 返回字符串；Agent A 要将它改为带有效期的对象，Agent B 同时基于旧接口增加界面展示。</p>
+<pre class="hljs"><code>先各自做再整合：
+               ┌→ A：接口改为 {text, expiresAt} ─┐
+共同旧版本 O ──┤                                ├→ 整合、检查、适配
+               └→ B：界面按字符串处理返回值 ─────┘
+</code></pre>
+<p>两边能同时推进，但 B 的假设可能在组合后失效，即使修改不同文件、没有文本冲突，也需要调整。课件用 MVCC 类比保留多版本再协调的思路；Git 合并并不因此具有数据库事务的全部保证。</p>
+<pre class="hljs"><code>先协调再修改（约定保护记忆接口及相关依赖）：
+时间 ↓
+Agent A                          Agent B
+取得锁                           申请同一把锁 → 等待
+读取共享的最新状态
+修改接口和受影响的调用方
+验证，保存提交并更新共享基线
+释放锁                           取得锁
+                                 重新读取最新基线
+                                 按新接口实现展示
+                                 验证、保存并更新基线、释放锁
+</code></pre>
+<p>锁让相关修改按顺序发生，减少同时基于旧假设修改的机会，代价是等待。拿到锁后必须重新读取最新状态；若仍使用等待前缓存的旧接口，串行写入也可能出错。采用独立 worktree 时，锁本身不会同步文件，还需要显式更新到约定的共享基线。</p>
+<p>锁的范围应覆盖任务依赖的共享状态，不能只看写哪个文件。只锁接口文件而不约束依赖该接口的修改，仍可能漏掉跨文件约束；锁整个项目则可能使无关工作也排队。所有相关参与者都要遵守协议，还需处理异常退出后的锁回收。</p>
+<p>这里的互斥锁指协作协议，不是 <code>git worktree lock</code>；后者用于保护 worktree 的管理信息免于被清理，不会禁止 Agent 修改工作文件。</p>
+<p>相对独立、接口稳定的工作适合分开推进后整合；频繁争用且返工昂贵的共享状态可考虑局部串行协调。两种方式也能结合：先约定接口，独立实现，再串行集成并验证。上锁不会自动证明修改正确，也不替代版本历史和测试。</p>
+<h2>各自完成，不等于项目完成</h2>
+<p><strong>版本控制只是工具，团队还需要共同的目标、完成标准和集成责任</strong>分支、worktree 和锁帮助保存状态、隔离或安排修改，但不会自动决定产品应满足什么要求，也不会保证每个人对“完成”的理解一致。</p>
+<p>以“用户纠正偏好后，下次回答采用新偏好”为验收目标：界面使用模拟数据展示成功、存储模块通过自己的读写测试、回答模块通过固定输入测试，仍不能证明完整行为已经实现。</p>
+<pre class="hljs"><code>局部检查：
+界面 + 模拟接口 → 通过
+存储 + 读写测试 → 通过
+回答 + 固定输入 → 通过
+
+共同验收：
+用户纠正偏好 → 界面提交 → 保存 → 下一次读取 → 回答采用新偏好
+                 └──── 在组合后的确切版本上走通这条链 ────┘
+</code></pre>
+<p>问题可能出现在接缝：界面提交的字段与存储接口不一致，或回答模块没有读取新保存的偏好。需要明确接口及失败语义，并指定负责推动整合与验收的人或 Agent，避免跨模块问题无人处理。完整链路验收也不能替代对其他边界条件的检查。</p>
+<p>人数增加会引入更多潜在沟通关系：若任意两人都可能需要协调，n 人共有 n(n−1)/2 对关系，3 人是 3 对，6 人是 15 对。这是潜在关系数量，不表示实际耗时必然按平方增长。清楚的接口、任务依赖和责任分工可以减少必须直接协调的关系。</p>
+<blockquote>
+<p>[!tip] Insights
+留意“我的部分好了”具体指什么：代码写完、局部测试通过，还是已在组合版本上验收。进度判断要对应共同的完成标准；增加执行者未必能解决上游决定未定、接口未对齐或集成无人负责造成的等待。</p>
+</blockquote>
+<h2>从需求结构出发复用工具：记录解题过程</h2>
+<p>理解版本管理的抽象后，可以识别软件开发之外的相似问题。课件以汉诺塔学习应用提出一种架构设想：需要记录孩子如何尝试、从哪里重试以及接受提示后怎样改变，可以考虑复用 Git 的版本历史，而不只保存最终答案。</p>
+<pre class="hljs"><code>S0 初始尝试 ── S1 中间版本 ── S2 卡住的尝试
+                    \
+                     S3 从 S1 重试 ── S4 新尝试
+                                      ↑
+                              点评关联到这个版本
+</code></pre>
+<p>节点可以保存截至该阶段的动作序列文件；提交之间的关系记录尝试的来路，分支保留不同路线，diff 比较两个版本的文本变化。应用根据初始盘面和动作序列实现回放，解释操作是否合法以及策略是否改善。Git 本身不理解汉诺塔规则。</p>
+<p>老师的点评可通过 <code>git notes</code> 关联到确切提交，补充说明而不改变原提交。若要判断提示是否帮助学习，还需要记录提示内容及发生时点；仅凭两个版本不同不能证明学习效果。</p>
+<p>这个案例提供的是可比较的设计方案，不是“所有数据都应该存进 Git”的结论。高频鼠标轨迹可以用事件日志，用户资料和课程统计可以用数据库；真正适合版本历史的是有意义的状态、分叉尝试、差异和关联点评。</p>
+<blockquote>
+<p>[!tip] Insights
+先识别需求里的结构，再选择工具。看到“服务器保存数据”时，继续问保存的是当前记录、事件流，还是有分叉的演化历史；知道的抽象越多，就越能提出贴合需求的备选方案。</p>
+</blockquote>
+<h2>MVP：用真实使用检验关键假设</h2>
+<p>从零开始做产品时，用户、需求、接口和验收标准都可能尚未确定，Intent 到 Spec 再到 Impl 的缺口容易被默认选择填满。写出了大量代码，也可能直到交付时才发现产品没有满足真实需要。</p>
+<p>最小可行产品（MVP，Minimum Viable Product）是足够小、又能投入真实使用以检验关键假设的版本。先明确需要验证什么，再选择能够提供证据的最小功能范围。最小并非单纯追求代码少，可行也不仅指界面能展示；版本应让目标用户实际经历要验证的行为。</p>
+<p>例如，个人助手可以先验证“记住并使用我的回答风格偏好，是否减少重复提醒”。第一版只围绕这一场景实现输入、保存、读取、使用和纠正，不必同时接入邮件、日程和浏览器。</p>
+<pre class="hljs"><code>假设：记住回答风格偏好能减少重复提醒
+                  ↓
+最小闭环：记录偏好 → 后续相关任务中使用 → 允许纠正
+                  ↓
+真实使用：是否真的采用？是否还频繁重复提醒？纠正是否生效？
+                  ↓
+根据证据决定：继续完善 / 修改需求或策略
+</code></pre>
+<p>功能是否按规格运行，与这个功能是否有用，需要分别判断。成功保存偏好是技术证据；后续任务实际使用偏好、用户重复提醒减少，才更接近该产品假设的证据。应事先约定观察方式；若行为已正确实现，却仍无助于用户的真实场景，就应重新审视假设，而不只增加功能。</p>
+<p>使用也会暴露需求里的含糊词：偏好是长期还是临时有效、在哪些任务中适用、纠正后何时生效。MVP 提早让这些问题出现，使规格和架构能在系统较小时调整。第一版获得的认识只适用于已观察的场景，不能直接推广到所有用户和任务。</p>
+<h2>早期 prompt：记录设计前提，用反馈修正</h2>
+<p>早期 prompt 会影响项目的第一套规格、数据结构和接口；后续 Agent 又会读取已有实现，沿着这些选择继续工作。因此，一项尚未验证的假设可能逐步成为各模块依赖的默认前提。</p>
+<pre class="hljs"><code>早期 prompt：“所有偏好永久有效、全局适用”
+                         ↓
+存储只记录 key/value，不记录作用域和有效期
+                         ↓
+读取接口默认任何任务都使用这些偏好
+                         ↓
+界面、测试继续围绕这个前提扩展
+                         ↓
+真实使用发现：某些偏好只适用于本次任务
+                         ↓
+需要调整规格、存储、读取、界面和测试
+</code></pre>
+<p>早期选择并不必然错误，也不可能无限推迟设计。技术债指现有设计使未来修改需要额外付出的成本；它可以来自未经检查的假设，也可以在真实使用带来新认识后出现。课件提醒“确定的设计”可能积累技术债，是要求留意前提和修改成本，而不是不做决定。</p>
+<p>初始 prompt 应明确当前要解决的场景、可观察的验收条件和已知约束，同时标明待验证的假设。例如：“先支持一项长期回答风格偏好；暂不支持任务级例外。通过真实使用验证它是否减少重复提醒，再决定如何扩展作用域。”当前范围明确，不需要预先实现所有未来变化。</p>
+<p>版本记录保存每次有意义的状态；决策记录补充当时为何这样选、依据是什么、哪些情况会促使重新考虑。只保存代码变化，通常不足以恢复当时的推理。真实使用发现前提变化后，应同步修正规格、实现和测试，而非只修改 prompt。</p>
+<p>例如，决策记录可以写：“第一版仅验证长期回答风格偏好，使用 key/value 降低实现成本；暂不支持任务或会话作用域。如果真实使用出现临时纠正影响后续任务的情况，就重新评估偏好模型。”这里的“暂不支持”描述当前范围，不等于已经证明用户不需要它。若“偏好都长期有效”只是设计假设，应明确标为待验证，不能写成既定需求。</p>
+<p>增加临时偏好时，需明确“临时”由会话结束、任务结束还是时间到期定义，再检查规格、存储与读取逻辑、旧数据处理和测试。修改 prompt 可以提出新目标，但不会自动使这些部分满足它；能否调整及修改成本要根据实际实现判断。</p>
+<pre class="hljs"><code>明确场景与假设 → 做出小版本 → 保存状态及设计理由
+       ↑                            ↓
+修正规格与设计 ← 检查哪些前提变化 ← 真实使用反馈
+</code></pre>
+<p>这个过程把本讲的几个概念连起来：可追踪性用于定位需求变化的影响，版本历史保留可回查的状态，协作机制组织修改与整合，MVP 为下一次设计提供实际使用证据。</p>
+</div></article>
+</main><section class="terminal" id="terminal" aria-label="Site terminal" hidden><button class="terminal-resize" id="terminal-resize" type="button" aria-label="Resize terminal" title="Drag to resize · arrow keys adjust height"></button><div class="terminal-heading"><span id="terminal-title">nomad / terminal</span><button class="terminal-close" id="terminal-close" type="button" aria-label="Close terminal">×</button></div><div class="terminal-output" id="terminal-output" aria-live="polite"></div><form id="terminal-form" autocomplete="off"><label class="terminal-prompt" for="terminal-input">nomad@home:<span id="terminal-cwd">~</span>$</label><input id="terminal-input" name="command" aria-label="Digital garden command" autocapitalize="none" autocomplete="off" spellcheck="false"></form><p class="terminal-help">Type help for commands · Esc to close</p></section></body></html>
