@@ -1,5 +1,28 @@
 import { renderNoteHeatmap } from "./heatmap.js";
 
+const parentLink = document.querySelector("#parent-link");
+const navigateUp = () => {
+  if (parentLink) window.location.href = parentLink.href;
+};
+document.addEventListener("keydown", (event) => {
+  if (
+    parentLink &&
+    event.key === "ArrowUp" &&
+    event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey &&
+    !event.repeat &&
+    !event.isComposing &&
+    !event.defaultPrevented &&
+    !event.target?.isContentEditable &&
+    !event.target?.closest?.("input, textarea, select")
+  ) {
+    event.preventDefault();
+    navigateUp();
+  }
+});
+
 const themeToggle = document.querySelector("#theme-toggle");
 if (themeToggle) {
   const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -54,6 +77,19 @@ if (diagrams.length) {
 
 const readingArticle = document.querySelector("main > article");
 if (readingArticle) {
+  const readingHeader = document.querySelector(".site-header");
+  let headerHeight = 0;
+  const measureHeader = () => {
+    headerHeight = readingHeader?.getBoundingClientRect().height ?? 0;
+    document.documentElement.style.setProperty("--reading-header-height", `${headerHeight}px`);
+  };
+  measureHeader();
+  window.addEventListener("resize", measureHeader);
+  if (readingHeader && "ResizeObserver" in window)
+    new ResizeObserver(() => {
+      measureHeader();
+      scheduleProgressUpdate();
+    }).observe(readingHeader);
   const progress = document.createElement("div");
   progress.className = "reading-progress";
   progress.innerHTML =
@@ -150,7 +186,7 @@ if (readingArticle) {
   const readingRange = () => {
     const bounds = readingArticle.getBoundingClientRect();
     return {
-      start: bounds.top + window.scrollY,
+      start: bounds.top + window.scrollY - headerHeight,
       end: bounds.bottom + window.scrollY - window.innerHeight,
     };
   };
@@ -162,13 +198,35 @@ if (readingArticle) {
       start + Math.min(1, Math.max(0, fraction)) * (end - start),
     );
   };
-  track.addEventListener("click", (event) => {
+  const seek = (event) => {
     const bounds = track.getBoundingClientRect();
     const fraction = window.matchMedia("(max-width: 900px)").matches
       ? (event.clientX - bounds.left) / bounds.width
       : (event.clientY - bounds.top) / bounds.height;
     jumpToFraction(fraction);
+  };
+  track.addEventListener("click", seek);
+  let dragPointer = null;
+  track.addEventListener("pointerdown", (event) => {
+    if (!event.isPrimary || event.button !== 0) return;
+    event.preventDefault();
+    dragPointer = event.pointerId;
+    track.setPointerCapture(event.pointerId);
+    track.blur();
+    seek(event);
   });
+  track.addEventListener("pointermove", (event) => {
+    if (event.pointerId === dragPointer) seek(event);
+  });
+  track.addEventListener("pointerup", (event) => {
+    if (event.pointerId !== dragPointer) return;
+    seek(event);
+    dragPointer = null;
+    track.releasePointerCapture(event.pointerId);
+  });
+  const stopDrag = () => { dragPointer = null; };
+  track.addEventListener("pointercancel", stopDrag);
+  track.addEventListener("lostpointercapture", stopDrag);
   track.addEventListener("keydown", (event) => {
     const steps = {
       ArrowDown: 0.05,
@@ -306,11 +364,7 @@ async function startTerminal() {
   let historyIndex = 0;
   let cwd = "/";
   let initialCwd = "/";
-  try {
-    sessionStorage.removeItem("nomad-terminal");
-  } catch {
-    /* old session data may be unavailable */
-  }
+  const sessionKey = "nomad-terminal";
   const heightKey = "nomad-terminal-height";
   const setHeight = (height) => {
     const max = Math.floor(window.innerHeight * 0.75);
@@ -381,6 +435,8 @@ async function startTerminal() {
     mainTop = pageMain.getBoundingClientRect().top + pageScroll;
     terminal.hidden = false;
     terminalToggle.setAttribute("aria-expanded", "true");
+    terminalToggle.setAttribute("aria-label", "Close terminal");
+    terminalToggle.title = "Close terminal (Esc)";
     document.body.classList.add("terminal-open");
     window.scrollTo(0, 0);
     pageMain.scrollTop = Math.max(0, pageScroll - mainTop);
@@ -397,12 +453,22 @@ async function startTerminal() {
     terminalCwd.textContent = cwd === "/" ? "~" : `~${cwd}`;
     terminal.hidden = true;
     terminalToggle.setAttribute("aria-expanded", "false");
+    terminalToggle.setAttribute("aria-label", "Open terminal");
+    terminalToggle.title = "Open terminal (`)";
     document.body.classList.remove("terminal-open");
+    try { sessionStorage.removeItem(sessionKey); } catch { /* optional session */ }
+    if (returnFocus === terminalToggle)
+      terminalToggle.setAttribute("data-restored-focus", "");
     returnFocus.focus({ preventScroll: true });
     window.scrollTo(0, restoreScroll);
   };
-  terminalToggle.addEventListener("click", openTerminal);
+  terminalToggle.addEventListener("click", () =>
+    terminal.hidden ? openTerminal() : closeTerminal(),
+  );
   terminalClose.addEventListener("click", closeTerminal);
+  terminalToggle.addEventListener("blur", () =>
+    terminalToggle.removeAttribute("data-restored-focus"),
+  );
   terminal.addEventListener("click", (event) => {
     if (event.target === terminalInput || event.target.closest("button"))
       return;
@@ -410,6 +476,7 @@ async function startTerminal() {
     focusCommandInput();
   });
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Tab") terminalToggle.removeAttribute("data-restored-focus");
     if (event.key === "Escape" && !terminal.hidden) {
       event.preventDefault();
       closeTerminal();
@@ -418,7 +485,12 @@ async function startTerminal() {
     if (
       event.key === "`" &&
       !event.repeat &&
-      !/INPUT|TEXTAREA/.test(document.activeElement?.tagName ?? "")
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.isComposing &&
+      !event.target?.isContentEditable &&
+      !event.target?.closest?.("input, textarea, select")
     ) {
       event.preventDefault();
       openTerminal();
@@ -430,18 +502,21 @@ async function startTerminal() {
     return response.json();
   });
   const notes = garden.notes ?? [];
-  const directories = new Set(["/", "/notes", "/about", "/tags"]);
-  for (const note of notes) {
-    const segments = cleanPath(note.path).split("/").filter(Boolean);
-    for (let index = 1; index < segments.length; index += 1)
-      directories.add(`/${segments.slice(0, index).join("/")}`);
-  }
+  const links = garden.links ?? [];
+  const directoryUrls = new Map(
+    garden.directories.map((directory) => [directory.path, directory.url]),
+  );
+  const directories = new Set(directoryUrls.keys());
 
   const commands = [
     "help",
     "pwd",
     "ls",
     "cd",
+    "up",
+    "notes",
+    "tags",
+    "about",
     "tree",
     "open",
     "cat",
@@ -513,6 +588,14 @@ async function startTerminal() {
   const findNote = (query) => {
     const resolved = resolve(query);
     const lowered = query.toLowerCase();
+    const exactLink = links.find((link) => cleanPath(link.path).toLowerCase() === resolved.toLowerCase());
+    const localLinks = links.filter((link) => link.directory === parentPath(resolved));
+    const linkName = baseName(resolved).toLowerCase();
+    const matches = localLinks.filter((link) => link.title.toLowerCase() === linkName);
+    const candidates = matches.length ? matches : localLinks.filter((link) => link.title.toLowerCase().startsWith(linkName));
+    if (!exactLink && candidates.length > 1) return null;
+    const link = exactLink ?? candidates[0];
+    if (link) return notes.find((note) => notePath(note) === cleanPath(link.target));
     return (
       notes.find(
         (note) => notePath(note).toLowerCase() === resolved.toLowerCase(),
@@ -536,16 +619,24 @@ async function startTerminal() {
       .filter((note) => parentPath(notePath(note)) === directory)
       .map((note) => note.title)
       .sort();
-    return [...childDirectories.map((name) => `${name}/`), ...childNotes];
+    const childLinks = links.filter((link) => link.directory === directory)
+      .map((link) => `${link.title} -> ${cleanPath(link.target)}`).sort();
+    return [...childDirectories.map((name) => `${name}/`), ...childNotes, ...childLinks];
   };
-  const pagePath = cleanPath(window.location.pathname);
-  const pageNote = notes.find(
-    (note) => notePath(note).toLowerCase() === pagePath.toLowerCase(),
-  );
-  initialCwd = pageNote
-    ? parentPath(notePath(pageNote))
-    : (canonicalDirectory(pagePath) ?? "/");
+  initialCwd = canonicalDirectory(pageMain.dataset.directory) ?? "/";
   cwd = initialCwd;
+  const navigate = (url) => {
+    if (!terminal.hidden) {
+      try {
+        sessionStorage.setItem(sessionKey, JSON.stringify({
+          target: new URL(url, "https://site.invalid").pathname,
+          history: commandHistory.slice(-100),
+          output: [...terminalOutput.children].slice(-200).map((line) => ({ text: line.textContent, type: line.className })),
+        }));
+      } catch { /* Navigation still works if session storage is unavailable. */ }
+    }
+    window.location.href = url;
+  };
   const run = (rawCommand) => {
     const raw = rawCommand.trim();
     if (!raw) return;
@@ -561,11 +652,15 @@ async function startTerminal() {
     switch (name.toLowerCase()) {
       case "help":
         print(
-          "help  pwd  ls [path]  cd <path>  tree [path]  open <note>\ncat <about|now>  random  whoami  home  history  clear  coffee  heatmap  exit",
+          "Commands\nhelp  pwd  ls [path]  cd <path>  tree [path]\nopen <note|path>  cat <about|now>\nhome  notes  tags  about  up  random  whoami\nhistory  clear  coffee  heatmap  exit\n\nUI / Shortcuts\nhome   ↔ nomad_\nup     ↔ ‹  /  Alt+↑\nexit   ↔ >_ / ×  /  Esc\n\n>_ terminal  ↔ `\nCompletion   ↔ Tab\nHistory      ↔ ↑ / ↓",
         );
         break;
       case "pwd":
         print(cwd);
+        break;
+      case "up":
+        if (parentLink) navigate(parentLink.href);
+        else print("Already at the site root.", "hint");
         break;
       case "ls": {
         const entries = list(argument);
@@ -580,7 +675,7 @@ async function startTerminal() {
           cwd = directory;
           showCwd();
           print(`moving to ${directory}`);
-          window.location.href = directory === "/" ? "/" : `${directory}/`;
+          navigate(directoryUrls.get(directory));
         }
         break;
       }
@@ -603,16 +698,18 @@ async function startTerminal() {
           rows.push(
             `${"  ".repeat(depthFrom(notePath(note), root))}└── ${note.title}`,
           );
+        for (const link of links.filter((item) => item.directory === root || isWithin(item.directory, root)))
+          rows.push(`${"  ".repeat(depthFrom(link.directory, root) + 1)}└── ${link.title} -> ${cleanPath(link.target)}`);
         print(rows.join("\n"));
         break;
       }
       case "open": {
         const note = findNote(argument);
         const directory = canonicalDirectory(resolve(argument));
-        if (note) window.location.href = note.url;
+        if (note) navigate(note.url);
         else if (directory)
-          window.location.href = directory === "/" ? "/" : `${directory}/`;
-        else print(`open: ${argument}: not found`, "error");
+          navigate(directoryUrls.get(directory));
+        else print(`open: ${argument}: not found or ambiguous; use the full path shown by ls`, "error");
         break;
       }
       case "cat": {
@@ -628,15 +725,17 @@ async function startTerminal() {
       case "random": {
         if (!notes.length) print("random: no published notes yet", "error");
         else
-          window.location.href =
-            notes[Math.floor(Math.random() * notes.length)].url;
+          navigate(notes[Math.floor(Math.random() * notes.length)].url);
         break;
       }
       case "whoami":
         print(`${garden.author}\n${garden.tagline}\n${garden.subtitle}`);
         break;
       case "home":
-        window.location.href = "/";
+      case "notes":
+      case "tags":
+      case "about":
+        navigate(garden.views[name.toLowerCase()]);
         break;
       case "history":
         print(
@@ -692,14 +791,27 @@ async function startTerminal() {
     if (event.key === "Tab") {
       event.preventDefault();
       const parts = terminalInput.value.split(/\s+/);
-      const fragment = parts.at(-1)?.toLowerCase() ?? "";
+      const argument = parts.at(-1) ?? "";
+      const fragment = argument.toLowerCase();
+      const prefix = argument.slice(0, argument.lastIndexOf("/") + 1);
+      const context = canonicalDirectory(resolve(prefix || "."));
+      const command = parts[0].toLowerCase();
+      const directoryCandidates = [...directories]
+        .filter((directory) => directory !== context && parentPath(directory) === context)
+        .map((directory) => prefix + baseName(directory));
       const candidates =
         parts.length === 1
           ? commands
-          : [...directories]
-              .map(baseName)
-              .concat(notes.map((note) => note.title));
-      const matches = candidates.filter((candidate) =>
+          : ["cd", "ls", "tree"].includes(command)
+            ? directoryCandidates
+            : command === "open"
+              ? directoryCandidates.concat(
+                notes.filter((note) => parentPath(notePath(note)) === context)
+                  .map((note) => prefix ? prefix + baseName(notePath(note)) : note.title),
+                links.filter((link) => link.directory === context).map((link) => prefix + link.title),
+              )
+              : command === "cat" ? ["about", "now"] : [];
+      const matches = [...new Set(candidates)].filter((candidate) =>
         candidate.toLowerCase().startsWith(fragment),
       );
       if (matches.length === 1) {
@@ -713,6 +825,17 @@ async function startTerminal() {
     }
   });
   showCwd();
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(sessionKey) ?? "null");
+    sessionStorage.removeItem(sessionKey);
+    if (saved && saved.target === window.location.pathname && Array.isArray(saved.history) && Array.isArray(saved.output)) {
+      commandHistory.push(...saved.history);
+      historyIndex = commandHistory.length;
+      saved.output.forEach((line) => appendLine(line.text, line.type.replace(/^terminal-line\s*/, "")));
+      terminalOutput.scrollTop = terminalOutput.scrollHeight;
+      openTerminal();
+    }
+  } catch { /* optional navigation session */ }
 }
 
 function cleanPath(value) {
