@@ -346,6 +346,12 @@ async function main(): Promise<void> {
       tagline: config.tagline,
       subtitle: config.subtitle,
       views: siteViews,
+      links: [...tags].flatMap(([slug, tag]) => tag.notes.map((note) => ({
+        directory: `/tags/${slug}`,
+        path: `/tags/${slug}${note.url}`,
+        title: note.title,
+        target: `/notes${note.url}`,
+      }))),
       directories: [
         ...Object.values(siteViews).map((url) => ({ path: url === "/" ? "/" : url.replace(/\/$/, ""), url })),
         ...[...tags.keys()].map((slug) => ({ path: `/tags/${slug}`, url: `/tags/${slug}/` })),

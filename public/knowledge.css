@@ -147,6 +147,7 @@ body::before {
 .terminal-toggle svg { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .theme-toggle:hover, .terminal-toggle:hover, .terminal-toggle[aria-expanded="true"] { border-color: var(--line); background: var(--outline-hover); color: var(--ink); }
 .theme-toggle:focus-visible, .terminal-toggle:focus-visible, .terminal-close:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; }
+.terminal-toggle[data-restored-focus]:focus { outline: none; }
 .terminal { position: fixed; right: 0; bottom: 0; left: 0; z-index: 10000; display: flex; flex-direction: column; height: min(var(--terminal-height, 300px), 75dvh); border-top: 3px double var(--terminal-edge); background: var(--terminal-bg); color: var(--ink); box-shadow: 0 -12px 28px var(--terminal-shadow); font: .84rem/1.55 ui-monospace, "JetBrains Mono", monospace; }
 .terminal[hidden] { display: none; }
 .terminal-resize { position: absolute; top: 0; left: 50%; z-index: 1; width: 4rem; height: 1rem; padding: 0; border: 0; border-radius: 1rem; background: var(--terminal-bg); color: var(--terminal-edge); cursor: ns-resize; touch-action: none; transform: translate(-50%, -50%); }

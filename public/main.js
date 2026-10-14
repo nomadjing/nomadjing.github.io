@@ -364,11 +364,7 @@ async function startTerminal() {
   let historyIndex = 0;
   let cwd = "/";
   let initialCwd = "/";
-  try {
-    sessionStorage.removeItem("nomad-terminal");
-  } catch {
-    /* old session data may be unavailable */
-  }
+  const sessionKey = "nomad-terminal";
   const heightKey = "nomad-terminal-height";
   const setHeight = (height) => {
     const max = Math.floor(window.innerHeight * 0.75);
@@ -460,6 +456,9 @@ async function startTerminal() {
     terminalToggle.setAttribute("aria-label", "Open terminal");
     terminalToggle.title = "Open terminal (`)";
     document.body.classList.remove("terminal-open");
+    try { sessionStorage.removeItem(sessionKey); } catch { /* optional session */ }
+    if (returnFocus === terminalToggle)
+      terminalToggle.setAttribute("data-restored-focus", "");
     returnFocus.focus({ preventScroll: true });
     window.scrollTo(0, restoreScroll);
   };
@@ -467,6 +466,9 @@ async function startTerminal() {
     terminal.hidden ? openTerminal() : closeTerminal(),
   );
   terminalClose.addEventListener("click", closeTerminal);
+  terminalToggle.addEventListener("blur", () =>
+    terminalToggle.removeAttribute("data-restored-focus"),
+  );
   terminal.addEventListener("click", (event) => {
     if (event.target === terminalInput || event.target.closest("button"))
       return;
@@ -474,6 +476,7 @@ async function startTerminal() {
     focusCommandInput();
   });
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Tab") terminalToggle.removeAttribute("data-restored-focus");
     if (event.key === "Escape" && !terminal.hidden) {
       event.preventDefault();
       closeTerminal();
@@ -499,6 +502,7 @@ async function startTerminal() {
     return response.json();
   });
   const notes = garden.notes ?? [];
+  const links = garden.links ?? [];
   const directoryUrls = new Map(
     garden.directories.map((directory) => [directory.path, directory.url]),
   );
@@ -584,6 +588,14 @@ async function startTerminal() {
   const findNote = (query) => {
     const resolved = resolve(query);
     const lowered = query.toLowerCase();
+    const exactLink = links.find((link) => cleanPath(link.path).toLowerCase() === resolved.toLowerCase());
+    const localLinks = links.filter((link) => link.directory === parentPath(resolved));
+    const linkName = baseName(resolved).toLowerCase();
+    const matches = localLinks.filter((link) => link.title.toLowerCase() === linkName);
+    const candidates = matches.length ? matches : localLinks.filter((link) => link.title.toLowerCase().startsWith(linkName));
+    if (!exactLink && candidates.length > 1) return null;
+    const link = exactLink ?? candidates[0];
+    if (link) return notes.find((note) => notePath(note) === cleanPath(link.target));
     return (
       notes.find(
         (note) => notePath(note).toLowerCase() === resolved.toLowerCase(),
@@ -607,10 +619,24 @@ async function startTerminal() {
       .filter((note) => parentPath(notePath(note)) === directory)
       .map((note) => note.title)
       .sort();
-    return [...childDirectories.map((name) => `${name}/`), ...childNotes];
+    const childLinks = links.filter((link) => link.directory === directory)
+      .map((link) => `${link.title} -> ${cleanPath(link.target)}`).sort();
+    return [...childDirectories.map((name) => `${name}/`), ...childNotes, ...childLinks];
   };
   initialCwd = canonicalDirectory(pageMain.dataset.directory) ?? "/";
   cwd = initialCwd;
+  const navigate = (url) => {
+    if (!terminal.hidden) {
+      try {
+        sessionStorage.setItem(sessionKey, JSON.stringify({
+          target: new URL(url, "https://site.invalid").pathname,
+          history: commandHistory.slice(-100),
+          output: [...terminalOutput.children].slice(-200).map((line) => ({ text: line.textContent, type: line.className })),
+        }));
+      } catch { /* Navigation still works if session storage is unavailable. */ }
+    }
+    window.location.href = url;
+  };
   const run = (rawCommand) => {
     const raw = rawCommand.trim();
     if (!raw) return;
@@ -626,14 +652,14 @@ async function startTerminal() {
     switch (name.toLowerCase()) {
       case "help":
         print(
-          "help  pwd  ls [path]  cd <path>  up  tree [path]  open <note|path>\nnotes  tags  about  home  cat <about|now>  random  whoami\nhistory  clear  coffee  heatmap  exit\n\n/ = homepage; /notes = notes; /tags = tags; /about = about\nNotes live under /notes/... in this navigation tree\nhome = cd /; notes = cd /notes; tags = cd /tags; about = cd /about\nup: same parent as the ‹ link; cd ..: parent of the current directory\nAlt+↑: up (outside text fields) · `: open terminal · Esc: close",
+          "Commands\nhelp  pwd  ls [path]  cd <path>  tree [path]\nopen <note|path>  cat <about|now>\nhome  notes  tags  about  up  random  whoami\nhistory  clear  coffee  heatmap  exit\n\nUI / Shortcuts\nhome   ↔ nomad_\nup     ↔ ‹  /  Alt+↑\nexit   ↔ >_ / ×  /  Esc\n\n>_ terminal  ↔ `\nCompletion   ↔ Tab\nHistory      ↔ ↑ / ↓",
         );
         break;
       case "pwd":
         print(cwd);
         break;
       case "up":
-        if (parentLink) navigateUp();
+        if (parentLink) navigate(parentLink.href);
         else print("Already at the site root.", "hint");
         break;
       case "ls": {
@@ -649,7 +675,7 @@ async function startTerminal() {
           cwd = directory;
           showCwd();
           print(`moving to ${directory}`);
-          window.location.href = directoryUrls.get(directory);
+          navigate(directoryUrls.get(directory));
         }
         break;
       }
@@ -672,16 +698,18 @@ async function startTerminal() {
           rows.push(
             `${"  ".repeat(depthFrom(notePath(note), root))}└── ${note.title}`,
           );
+        for (const link of links.filter((item) => item.directory === root || isWithin(item.directory, root)))
+          rows.push(`${"  ".repeat(depthFrom(link.directory, root) + 1)}└── ${link.title} -> ${cleanPath(link.target)}`);
         print(rows.join("\n"));
         break;
       }
       case "open": {
         const note = findNote(argument);
         const directory = canonicalDirectory(resolve(argument));
-        if (note) window.location.href = note.url;
+        if (note) navigate(note.url);
         else if (directory)
-          window.location.href = directoryUrls.get(directory);
-        else print(`open: ${argument}: not found`, "error");
+          navigate(directoryUrls.get(directory));
+        else print(`open: ${argument}: not found or ambiguous; use the full path shown by ls`, "error");
         break;
       }
       case "cat": {
@@ -697,8 +725,7 @@ async function startTerminal() {
       case "random": {
         if (!notes.length) print("random: no published notes yet", "error");
         else
-          window.location.href =
-            notes[Math.floor(Math.random() * notes.length)].url;
+          navigate(notes[Math.floor(Math.random() * notes.length)].url);
         break;
       }
       case "whoami":
@@ -708,7 +735,7 @@ async function startTerminal() {
       case "notes":
       case "tags":
       case "about":
-        window.location.href = garden.views[name.toLowerCase()];
+        navigate(garden.views[name.toLowerCase()]);
         break;
       case "history":
         print(
@@ -764,14 +791,27 @@ async function startTerminal() {
     if (event.key === "Tab") {
       event.preventDefault();
       const parts = terminalInput.value.split(/\s+/);
-      const fragment = parts.at(-1)?.toLowerCase() ?? "";
+      const argument = parts.at(-1) ?? "";
+      const fragment = argument.toLowerCase();
+      const prefix = argument.slice(0, argument.lastIndexOf("/") + 1);
+      const context = canonicalDirectory(resolve(prefix || "."));
+      const command = parts[0].toLowerCase();
+      const directoryCandidates = [...directories]
+        .filter((directory) => directory !== context && parentPath(directory) === context)
+        .map((directory) => prefix + baseName(directory));
       const candidates =
         parts.length === 1
           ? commands
-          : [...directories]
-              .map(baseName)
-              .concat(notes.map((note) => note.title));
-      const matches = candidates.filter((candidate) =>
+          : ["cd", "ls", "tree"].includes(command)
+            ? directoryCandidates
+            : command === "open"
+              ? directoryCandidates.concat(
+                notes.filter((note) => parentPath(notePath(note)) === context)
+                  .map((note) => prefix ? prefix + baseName(notePath(note)) : note.title),
+                links.filter((link) => link.directory === context).map((link) => prefix + link.title),
+              )
+              : command === "cat" ? ["about", "now"] : [];
+      const matches = [...new Set(candidates)].filter((candidate) =>
         candidate.toLowerCase().startsWith(fragment),
       );
       if (matches.length === 1) {
@@ -785,6 +825,17 @@ async function startTerminal() {
     }
   });
   showCwd();
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(sessionKey) ?? "null");
+    sessionStorage.removeItem(sessionKey);
+    if (saved && saved.target === window.location.pathname && Array.isArray(saved.history) && Array.isArray(saved.output)) {
+      commandHistory.push(...saved.history);
+      historyIndex = commandHistory.length;
+      saved.output.forEach((line) => appendLine(line.text, line.type.replace(/^terminal-line\s*/, "")));
+      terminalOutput.scrollTop = terminalOutput.scrollHeight;
+      openTerminal();
+    }
+  } catch { /* optional navigation session */ }
 }
 
 function cleanPath(value) {
