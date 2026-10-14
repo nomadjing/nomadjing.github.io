@@ -1,5 +1,28 @@
 import { renderNoteHeatmap } from "./heatmap.js";
 
+const parentLink = document.querySelector("#parent-link");
+const navigateUp = () => {
+  if (parentLink) window.location.href = parentLink.href;
+};
+document.addEventListener("keydown", (event) => {
+  if (
+    parentLink &&
+    event.key === "ArrowUp" &&
+    event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey &&
+    !event.repeat &&
+    !event.isComposing &&
+    !event.defaultPrevented &&
+    !event.target?.isContentEditable &&
+    !event.target?.closest?.("input, textarea, select")
+  ) {
+    event.preventDefault();
+    navigateUp();
+  }
+});
+
 const themeToggle = document.querySelector("#theme-toggle");
 if (themeToggle) {
   const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -54,6 +77,19 @@ if (diagrams.length) {
 
 const readingArticle = document.querySelector("main > article");
 if (readingArticle) {
+  const readingHeader = document.querySelector(".site-header");
+  let headerHeight = 0;
+  const measureHeader = () => {
+    headerHeight = readingHeader?.getBoundingClientRect().height ?? 0;
+    document.documentElement.style.setProperty("--reading-header-height", `${headerHeight}px`);
+  };
+  measureHeader();
+  window.addEventListener("resize", measureHeader);
+  if (readingHeader && "ResizeObserver" in window)
+    new ResizeObserver(() => {
+      measureHeader();
+      scheduleProgressUpdate();
+    }).observe(readingHeader);
   const progress = document.createElement("div");
   progress.className = "reading-progress";
   progress.innerHTML =
@@ -150,7 +186,7 @@ if (readingArticle) {
   const readingRange = () => {
     const bounds = readingArticle.getBoundingClientRect();
     return {
-      start: bounds.top + window.scrollY,
+      start: bounds.top + window.scrollY - headerHeight,
       end: bounds.bottom + window.scrollY - window.innerHeight,
     };
   };
@@ -162,13 +198,35 @@ if (readingArticle) {
       start + Math.min(1, Math.max(0, fraction)) * (end - start),
     );
   };
-  track.addEventListener("click", (event) => {
+  const seek = (event) => {
     const bounds = track.getBoundingClientRect();
     const fraction = window.matchMedia("(max-width: 900px)").matches
       ? (event.clientX - bounds.left) / bounds.width
       : (event.clientY - bounds.top) / bounds.height;
     jumpToFraction(fraction);
+  };
+  track.addEventListener("click", seek);
+  let dragPointer = null;
+  track.addEventListener("pointerdown", (event) => {
+    if (!event.isPrimary || event.button !== 0) return;
+    event.preventDefault();
+    dragPointer = event.pointerId;
+    track.setPointerCapture(event.pointerId);
+    track.blur();
+    seek(event);
   });
+  track.addEventListener("pointermove", (event) => {
+    if (event.pointerId === dragPointer) seek(event);
+  });
+  track.addEventListener("pointerup", (event) => {
+    if (event.pointerId !== dragPointer) return;
+    seek(event);
+    dragPointer = null;
+    track.releasePointerCapture(event.pointerId);
+  });
+  const stopDrag = () => { dragPointer = null; };
+  track.addEventListener("pointercancel", stopDrag);
+  track.addEventListener("lostpointercapture", stopDrag);
   track.addEventListener("keydown", (event) => {
     const steps = {
       ArrowDown: 0.05,
@@ -381,6 +439,8 @@ async function startTerminal() {
     mainTop = pageMain.getBoundingClientRect().top + pageScroll;
     terminal.hidden = false;
     terminalToggle.setAttribute("aria-expanded", "true");
+    terminalToggle.setAttribute("aria-label", "Close terminal");
+    terminalToggle.title = "Close terminal (Esc)";
     document.body.classList.add("terminal-open");
     window.scrollTo(0, 0);
     pageMain.scrollTop = Math.max(0, pageScroll - mainTop);
@@ -397,11 +457,15 @@ async function startTerminal() {
     terminalCwd.textContent = cwd === "/" ? "~" : `~${cwd}`;
     terminal.hidden = true;
     terminalToggle.setAttribute("aria-expanded", "false");
+    terminalToggle.setAttribute("aria-label", "Open terminal");
+    terminalToggle.title = "Open terminal (`)";
     document.body.classList.remove("terminal-open");
     returnFocus.focus({ preventScroll: true });
     window.scrollTo(0, restoreScroll);
   };
-  terminalToggle.addEventListener("click", openTerminal);
+  terminalToggle.addEventListener("click", () =>
+    terminal.hidden ? openTerminal() : closeTerminal(),
+  );
   terminalClose.addEventListener("click", closeTerminal);
   terminal.addEventListener("click", (event) => {
     if (event.target === terminalInput || event.target.closest("button"))
@@ -418,7 +482,12 @@ async function startTerminal() {
     if (
       event.key === "`" &&
       !event.repeat &&
-      !/INPUT|TEXTAREA/.test(document.activeElement?.tagName ?? "")
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.isComposing &&
+      !event.target?.isContentEditable &&
+      !event.target?.closest?.("input, textarea, select")
     ) {
       event.preventDefault();
       openTerminal();
@@ -430,18 +499,20 @@ async function startTerminal() {
     return response.json();
   });
   const notes = garden.notes ?? [];
-  const directories = new Set(["/", "/notes", "/about", "/tags"]);
-  for (const note of notes) {
-    const segments = cleanPath(note.path).split("/").filter(Boolean);
-    for (let index = 1; index < segments.length; index += 1)
-      directories.add(`/${segments.slice(0, index).join("/")}`);
-  }
+  const directoryUrls = new Map(
+    garden.directories.map((directory) => [directory.path, directory.url]),
+  );
+  const directories = new Set(directoryUrls.keys());
 
   const commands = [
     "help",
     "pwd",
     "ls",
     "cd",
+    "up",
+    "notes",
+    "tags",
+    "about",
     "tree",
     "open",
     "cat",
@@ -538,13 +609,7 @@ async function startTerminal() {
       .sort();
     return [...childDirectories.map((name) => `${name}/`), ...childNotes];
   };
-  const pagePath = cleanPath(window.location.pathname);
-  const pageNote = notes.find(
-    (note) => notePath(note).toLowerCase() === pagePath.toLowerCase(),
-  );
-  initialCwd = pageNote
-    ? parentPath(notePath(pageNote))
-    : (canonicalDirectory(pagePath) ?? "/");
+  initialCwd = canonicalDirectory(pageMain.dataset.directory) ?? "/";
   cwd = initialCwd;
   const run = (rawCommand) => {
     const raw = rawCommand.trim();
@@ -561,11 +626,15 @@ async function startTerminal() {
     switch (name.toLowerCase()) {
       case "help":
         print(
-          "help  pwd  ls [path]  cd <path>  tree [path]  open <note>\ncat <about|now>  random  whoami  home  history  clear  coffee  heatmap  exit",
+          "help  pwd  ls [path]  cd <path>  up  tree [path]  open <note|path>\nnotes  tags  about  home  cat <about|now>  random  whoami\nhistory  clear  coffee  heatmap  exit\n\n/ = homepage; /notes = notes; /tags = tags; /about = about\nNotes live under /notes/... in this navigation tree\nhome = cd /; notes = cd /notes; tags = cd /tags; about = cd /about\nup: same parent as the ‹ link; cd ..: parent of the current directory\nAlt+↑: up (outside text fields) · `: open terminal · Esc: close",
         );
         break;
       case "pwd":
         print(cwd);
+        break;
+      case "up":
+        if (parentLink) navigateUp();
+        else print("Already at the site root.", "hint");
         break;
       case "ls": {
         const entries = list(argument);
@@ -580,7 +649,7 @@ async function startTerminal() {
           cwd = directory;
           showCwd();
           print(`moving to ${directory}`);
-          window.location.href = directory === "/" ? "/" : `${directory}/`;
+          window.location.href = directoryUrls.get(directory);
         }
         break;
       }
@@ -611,7 +680,7 @@ async function startTerminal() {
         const directory = canonicalDirectory(resolve(argument));
         if (note) window.location.href = note.url;
         else if (directory)
-          window.location.href = directory === "/" ? "/" : `${directory}/`;
+          window.location.href = directoryUrls.get(directory);
         else print(`open: ${argument}: not found`, "error");
         break;
       }
@@ -636,7 +705,10 @@ async function startTerminal() {
         print(`${garden.author}\n${garden.tagline}\n${garden.subtitle}`);
         break;
       case "home":
-        window.location.href = "/";
+      case "notes":
+      case "tags":
+      case "about":
+        window.location.href = garden.views[name.toLowerCase()];
         break;
       case "history":
         print(

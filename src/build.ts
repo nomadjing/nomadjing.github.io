@@ -5,6 +5,7 @@ import { buildBacklinks } from "./backlinks.js";
 import { loadSiteContent, slugify } from "./content.js";
 import { createImageAssets } from "./images.js";
 import { createMarkdownRenderer } from "./markdown.js";
+import { pageNavigation, siteViews, type Breadcrumb, type PageKind } from "./navigation.js";
 import type { Note, SiteConfig } from "./types.js";
 
 const projectRoot = path.resolve(
@@ -64,12 +65,12 @@ function makeTree(notes: Note[]): TreeNode {
   }
   return root;
 }
-function renderTree(node: TreeNode, depth = 0): string {
+function renderTree(node: TreeNode, depth = 0, prefix: string[] = []): string {
   const directories = [...node.directories]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(
       ([name, child]) =>
-        `<li class="tree-directory"><details${depth === 0 ? " open" : ""}><summary>${escapeHtml(name)}/</summary>${renderTree(child, depth + 1)}</details></li>`,
+        `<li class="tree-directory"><details${depth === 0 ? " open" : ""}><summary><a href="/${[...prefix, name].map(slugify).join("/")}/">${escapeHtml(name)}/</a></summary>${renderTree(child, depth + 1, [...prefix, name])}</details></li>`,
     );
   const notes = node.notes
     .sort((a, b) => a.title.localeCompare(b.title))
@@ -82,13 +83,14 @@ function renderTree(node: TreeNode, depth = 0): string {
 function collectDirectoryPages(
   node: TreeNode,
   prefix: string[] = [],
-): Array<{ title: string; url: string; node: TreeNode }> {
+): Array<{ title: string; url: string; node: TreeNode; parts: string[] }> {
   return [...node.directories].flatMap(([name, child]) => {
     const parts = [...prefix, name];
     const page = {
       title: name,
       url: `/${parts.map(slugify).join("/")}/`,
       node: child,
+      parts,
     };
     return [page, ...collectDirectoryPages(child, parts)];
   });
@@ -112,25 +114,15 @@ function plainText(markdown: string): string {
     .slice(0, 600);
 }
 
-function directoryLabel(segments: string[], index: number, labels: Map<string, string>): string {
-  return labels.get(`/${segments.slice(0, index + 1).join("/")}/`) ?? segments[index];
-}
-
-function headerPath(
-  siteName: string,
-  url: string,
-  currentTitle: string,
-  directoryLabels: Map<string, string>,
-): string {
-  const segments = url.split("/").filter(Boolean);
-  const parts = [`<a class="path-home" href="/">${escapeHtml(siteName)}</a>`];
-  if (!segments.length) return parts[0];
-  const hasMiddle = segments.length > 2;
-  const hiddenPaths = segments.slice(1, -1).map((_segment, index) =>
-    `<a href="/${segments.slice(0, index + 2).join("/")}/">${escapeHtml(directoryLabel(segments, index + 1, directoryLabels))}</a>`,
+function headerPath(breadcrumbs: Breadcrumb[]): string {
+  const parts = [`<a class="path-home" href="/">${escapeHtml(breadcrumbs[0].label)}</a>`];
+  if (breadcrumbs.length === 1) return parts[0];
+  const hasMiddle = breadcrumbs.length > 3;
+  const hiddenPaths = breadcrumbs.slice(2, -1).map((crumb) =>
+    `<a href="${escapeHtml(crumb.url)}">${escapeHtml(crumb.label)}</a>`,
   ).join("");
-  segments.forEach((segment, index) => {
-    const isLast = index === segments.length - 1;
+  breadcrumbs.slice(1).forEach((crumb, index) => {
+    const isLast = index === breadcrumbs.length - 2;
     parts.push(`<span class="path-separator">/</span>`);
     if (index === 1 && hasMiddle)
       parts.push(
@@ -138,9 +130,9 @@ function headerPath(
       );
     if (isLast)
       parts.push(
-        `<span class="path-current">${escapeHtml(currentTitle)}</span>`,
+        `<span class="path-current">${escapeHtml(crumb.label)}</span>`,
       );
-    else parts.push(`<a class="${index === 0 ? "path-section" : "path-middle"}" href="/${segments.slice(0, index + 1).join("/")}/">${escapeHtml(directoryLabel(segments, index, directoryLabels))}</a>`);
+    else parts.push(`<a class="${index === 0 ? "path-section" : "path-middle"}" href="${escapeHtml(crumb.url)}">${escapeHtml(crumb.label)}</a>`);
   });
   return parts.join("");
 }
@@ -158,6 +150,8 @@ async function main(): Promise<void> {
     (note) => /(^|[\\/])about\.md$/i.test(note.relativePath) || note.title.toLowerCase() === "about",
   );
   const contentNotes = notes.filter((note) => note !== aboutNote);
+  const tree = makeTree(contentNotes);
+  const directoryPages = collectDirectoryPages(tree);
   const directoryLabels = new Map<string, string>();
   for (const note of notes) {
     const directories = note.relativePath.replace(/\\/g, "/").split("/").slice(0, -1);
@@ -187,48 +181,29 @@ async function main(): Promise<void> {
     path.join(distRoot, "vendor/fonts"),
     { recursive: true },
   );
-  await writeFile(
-    path.join(distRoot, "garden-index.json"),
-    JSON.stringify({
-      author: config.author,
-      tagline: config.tagline,
-      subtitle: config.subtitle,
-      about: aboutNote ? { title: aboutNote.title, text: plainText(aboutNote.markdown) } : undefined,
-      notes: contentNotes.map((note) => ({
-        title: note.title,
-        url: note.url,
-        path: note.url,
-        date: note.date,
-        updated: note.updated,
-        tags: note.tags,
-        text: plainText(note.markdown),
-      })),
-    }),
-  );
 
   const wrapPage = (
     title: string,
     description: string,
     content: string,
     url = "/",
+    kind: PageKind = "note",
   ) => {
-    const section = url.split("/").filter(Boolean)[0] ?? "";
-    const segments = url.split("/").filter(Boolean);
-    const displayPath = segments.map((segment, index) =>
-      index === segments.length - 1 ? title : directoryLabel(segments, index, directoryLabels),
-    );
-    const active = (name: string) =>
-      section === name ? 'class="active" aria-current="page"' : "";
+    const navigation = pageNavigation(config.siteName, url, title, kind, directoryLabels);
+    const active = (name: "notes" | "tags" | "about") =>
+      navigation.section === name ? `class="active" aria-current="${url === siteViews[name] ? "page" : "location"}"` : "";
     return fill(layout, {
       PAGE_TITLE:
         title === config.siteName
           ? escapeHtml(title)
           : `${escapeHtml(title)} · ${escapeHtml(config.siteName)}`,
       DESCRIPTION: escapeHtml(description),
-      HEADER_PATH: headerPath(config.siteName, url, title, directoryLabels),
-      FULL_PATH: escapeHtml(
-        `${config.siteName}${displayPath.length ? `/${displayPath.join("/")}` : ""}`,
-      ),
+      PARENT_LINK: navigation.parentUrl
+        ? `<a class="path-up" id="parent-link" href="${escapeHtml(navigation.parentUrl)}" rel="up" aria-label="返回上一级" aria-keyshortcuts="Alt+ArrowUp" title="返回上一级 (Alt+↑)">‹</a>`
+        : "",
+      HEADER_PATH: headerPath(navigation.breadcrumbs),
+      FULL_PATH: escapeHtml(navigation.breadcrumbs.map((crumb) => crumb.label).join("/")),
+      DIRECTORY_PATH: escapeHtml(navigation.directory),
       NAV_NOTES_ATTR: active("notes"),
       NAV_TAGS_ATTR: active("tags"),
       NAV_ABOUT_ATTR: active("about"),
@@ -252,6 +227,7 @@ async function main(): Promise<void> {
       note.markdown.replace(/\s+/g, " ").trim().slice(0, 160),
       body,
       note.url,
+      note === aboutNote ? "about" : "note",
     );
     const output = path.join(distRoot, note.outputPath);
     await mkdir(path.dirname(output), { recursive: true });
@@ -272,39 +248,22 @@ async function main(): Promise<void> {
           aboutNote?.html ?? `<p>${escapeHtml(config.author)}</p>`,
         ),
         "/about/",
+        "about",
       ),
     );
   }
 
-  const tree = makeTree(contentNotes);
   const notesPage = `<section class="archive-page"><h1>Notes</h1><input id="archive-query" class="archive-search" type="search" aria-label="Search notes" placeholder="Search notes…" autocomplete="off"><div class="tree archive-tree">${renderTree(tree)}</div><ul class="archive-results" id="archive-results" hidden></ul><p id="archive-empty" hidden>No matches.</p></section>`;
   await mkdir(path.join(distRoot, "notes"), { recursive: true });
   await writeFile(
     path.join(distRoot, "notes/index.html"),
-    wrapPage("notes", "All published notes", notesPage, "/notes/"),
+    wrapPage("Notes", "All published notes", notesPage, "/notes/", "notes"),
   );
   await mkdir(path.join(distRoot, "archive"), { recursive: true });
   await writeFile(path.join(distRoot, "archive/index.html"), '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/notes/"><link rel="canonical" href="/notes/"><title>Notes</title></head><body><a href="/notes/">Go to Notes</a></body></html>');
-  for (const section of ["research", "training"]) {
-    const node = [...tree.directories].find(
-      ([name]) => slugify(name) === section,
-    )?.[1];
-    const content = `<div class="tree"><p>$ tree ${section}</p>${node ? renderTree(node) : "<p>No published notes yet.</p>"}</div>`;
-    const output = path.join(distRoot, section, "index.html");
-    await mkdir(path.dirname(output), { recursive: true });
-    await writeFile(
-      output,
-      wrapPage(
-        section,
-        `${section} notes`,
-        sectionPage(section, content),
-        `/${section}/`,
-      ),
-    );
-  }
-  for (const directory of collectDirectoryPages(tree)) {
+  for (const directory of directoryPages) {
     if (
-      ["/archive/", "/research/", "/notes/", "/training/", "/about/"].includes(
+      ["/archive/", "/notes/", "/tags/", "/about/"].includes(
         directory.url,
       ) ||
       notes.some((note) => note.url === directory.url)
@@ -316,7 +275,7 @@ async function main(): Promise<void> {
       "index.html",
     );
     await mkdir(path.dirname(output), { recursive: true });
-    const content = `<div class="tree"><p>$ tree ${escapeHtml(directory.title)}</p>${renderTree(directory.node)}</div>`;
+    const content = `<div class="tree archive-tree">${renderTree(directory.node, 0, directory.parts)}</div>`;
     await writeFile(
       output,
       wrapPage(
@@ -324,6 +283,7 @@ async function main(): Promise<void> {
         `${directory.title} notes`,
         sectionPage(directory.title, content),
         directory.url,
+        "directory",
       ),
     );
   }
@@ -354,10 +314,11 @@ async function main(): Promise<void> {
   await writeFile(
     path.join(distRoot, "tags/index.html"),
     wrapPage(
-      "tags",
+      "Tags",
       "Published note tags",
-      sectionPage("Tags", tagLinks ? `<div class="tag-list">${tagLinks}</div>` : "<p>No tagged notes yet.</p>"),
+      sectionPage("Tags", `${tagLinks ? `<div class="tag-list">${tagLinks}</div>` : "<p>No tagged notes yet.</p>"}`),
       "/tags/",
+      "tags",
     ),
   );
   for (const [slug, tag] of tags) {
@@ -370,12 +331,38 @@ async function main(): Promise<void> {
         `Notes tagged ${tag.label}`,
         sectionPage(
           `#${tag.label}`,
-          tag.notes.length ? `<ul>${tag.notes.map((note) => `<li><a href="${note.url}">${escapeHtml(note.title)}</a></li>`).join("")}</ul>` : "<p>No published notes with this tag yet.</p>",
+          `${tag.notes.length ? `<ul>${tag.notes.map((note) => `<li><a href="${note.url}">${escapeHtml(note.title)}</a></li>`).join("")}</ul>` : "<p>No published notes with this tag yet.</p>"}`,
         ),
         `/tags/${slug}/`,
+        "tag",
       ),
     );
   }
+
+  await writeFile(
+    path.join(distRoot, "garden-index.json"),
+    JSON.stringify({
+      author: config.author,
+      tagline: config.tagline,
+      subtitle: config.subtitle,
+      views: siteViews,
+      directories: [
+        ...Object.values(siteViews).map((url) => ({ path: url === "/" ? "/" : url.replace(/\/$/, ""), url })),
+        ...[...tags.keys()].map((slug) => ({ path: `/tags/${slug}`, url: `/tags/${slug}/` })),
+        ...directoryPages.map((directory) => ({ path: `/notes${directory.url.replace(/\/$/, "")}`, url: directory.url })),
+      ],
+      about: aboutNote ? { title: aboutNote.title, text: plainText(aboutNote.markdown) } : undefined,
+      notes: contentNotes.map((note) => ({
+        title: note.title,
+        url: note.url,
+        path: `/notes${note.url}`,
+        date: note.date,
+        updated: note.updated,
+        tags: note.tags,
+        text: plainText(note.markdown),
+      })),
+    }),
+  );
 
   const now = notes.find(
     (note) =>
@@ -418,7 +405,7 @@ async function main(): Promise<void> {
   });
   await writeFile(
     path.join(distRoot, "index.html"),
-    wrapPage(config.siteName, config.subtitle, homeBody),
+    wrapPage(config.siteName, config.subtitle, homeBody, "/", "home"),
   );
   console.log(`[build] ${notes.length} published note(s) from ${contentRoot}`);
   console.log(`[build] ${copiedImages} referenced image(s) copied`);
