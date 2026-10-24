@@ -1,11 +1,71 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>nomad_</title><meta name="description" content="Jing Wang's notes on programs and research"><script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script><link rel="stylesheet" href="/vendor/katex.min.css"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/knowledge.css"><script type="module" src="/main.js"></script></head><body><header class="site-header"><div class="site-location" title="nomad_"><a class="path-home" href="/">nomad_</a></div><nav aria-label="Primary navigation"><a  href="/notes/">Notes</a><a  href="/tags/">Tags</a><a  href="/about/">About</a><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">☾</button><button class="terminal-toggle" id="terminal-toggle" type="button" aria-label="Open terminal" title="Open terminal (&#96;)" aria-controls="terminal" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 7 5 5-5 5m8 0h6"/></svg></button></nav></header><main data-directory="/"><section class="intro">
-  <h1><span class="intro-mark" aria-hidden="true">&gt;_</span>nomad's blog</h1>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>nomad_</title>
+  <meta name="description" content="Jing Wang&#39;s notes on programs and research">
+  <script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script>
+  <link rel="preload" href="/fonts/jetbrains-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/main.js"></script>
+</head>
+<body class="page-home">
+  <header class="site-header">
+    <div class="site-location" title="nomad_"><a class="path-home" href="/">nomad_</a></div>
+    <nav class="site-nav" aria-label="Primary navigation">
+      <a  href="/notes/">Notes</a>
+      <a  href="/tags/">Tags</a>
+      <a  href="/about/">About</a>
+      <span class="site-nav-tools">
+        <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2m0 15v2M4.6 4.6 6 6m12 12 1.4 1.4M2.5 12h2m15 0h2M4.6 19.4 6 18M18 6l1.4-1.4"/></svg>
+        </button>
+        <button class="icon-button terminal-toggle" id="terminal-toggle" type="button" aria-label="Open terminal" title="Open terminal (&#96;)" aria-controls="terminal" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 7 5 5-5 5m8 0h6"/></svg>
+        </button>
+      </span>
+    </nav>
+  </header>
+  <main data-directory="/"><section class="intro">
+  <h1><span class="intro-mark" aria-hidden="true">&gt;_</span>nomad&#39;s blog</h1>
   <p class="intro-tagline">Programs, proofs &amp; research.</p>
-  <p class="intro-copy">Hi, I'm Jing Wang, a graduate student at NJU Software Institute, studying static analysis and programming languages. My current research explores lifecycle behavior in HarmonyOS applications. This is where I keep notes from papers, experiments, and things I'm learning.</p>
-  <div class="research-topics" aria-label="Research interests"><a href="/tags/static-analysis/">static-analysis</a><span aria-hidden="true">·</span><a href="/tags/program-language/">program-language</a><span aria-hidden="true">·</span><a href="/tags/algorithms/">algorithms</a></div>
-  <div class="off-hours"><span class="off-hours-label">// off the clock</span><p><span>rowing</span><span>lifting</span><span>long walks</span><span>guitar</span><span>films</span></p></div>
+  <p class="intro-copy">Hi, I&#39;m Jing Wang, a graduate student at NJU Software Institute, studying static analysis and programming languages. My current research explores lifecycle behavior in HarmonyOS applications. This is where I keep notes from papers, experiments, and things I&#39;m learning.</p>
+  <div class="research-topics" aria-label="Research interests"><a href="/tags/static-analysis/">#static-analysis</a><a href="/tags/program-language/">#program-language</a><a href="/tags/algorithms/">#algorithms</a></div>
+  <dl class="intro-facts"><div><dt>off the clock</dt><dd><span>rowing</span><span>lifting</span><span>long walks</span><span>guitar</span><span>films</span></dd></div></dl>
 </section>
-<section class="home-projects"><h2>Projects</h2><div class="project-list"><div class="project-row"><div class="project-head"><h3><a href="https://github.com/nomadjing/ArkLifeguard">ArkLifeguard</a></h3><span class="project-status">research in progress</span></div><p>A command-line static analysis tool for HarmonyOS/OpenHarmony ArkTS applications.</p></div><div class="project-row"><div class="project-head"><h3><a href="https://github.com/nomadjing/IFDS-IDE-reproduction">IFDS-IDE-reproduction</a></h3><span class="project-status">ongoing</span></div><p>Reproducing the IFDS and IDE algorithms for interprocedural program analysis.</p></div></div></section>
+<section class="home-section home-projects">
+  <h2 class="section-title">projects</h2>
+  <div class="project-list"><div class="project-row"><div class="project-head"><h3><a href="https://github.com/nomadjing/ArkLifeguard">ArkLifeguard</a></h3><span class="project-status">[research in progress]</span></div><p>A command-line static analysis tool for HarmonyOS/OpenHarmony ArkTS applications.</p></div><div class="project-row"><div class="project-head"><h3><a href="https://github.com/nomadjing/IFDS-IDE-reproduction">IFDS-IDE-reproduction</a></h3><span class="project-status">[ongoing]</span></div><p>Reproducing the IFDS and IDE algorithms for interprocedural program analysis.</p></div></div>
+</section>
 
-<section class="home-writing"><div class="section-heading"><h2>Selected Writing</h2><a class="section-more" href="/notes/">All notes <span aria-hidden="true">↗</span></a></div><ul class="writing-list"><li><a href="/vibe-coding/agent辅助学习/">Agent辅助学习</a></li><li><a href="/vibe-coding/lec01intro/">Lec01Intro</a></li><li><a href="/vibe-coding/lec02-prompt-engineering/">Lec02 Prompt Engineering</a></li></ul></section>
-</main><section class="terminal" id="terminal" aria-label="Site terminal" hidden><button class="terminal-resize" id="terminal-resize" type="button" aria-label="Resize terminal" title="Drag to resize · arrow keys adjust height"></button><div class="terminal-heading"><span id="terminal-title">nomad / terminal</span><button class="terminal-close" id="terminal-close" type="button" aria-label="Close terminal">×</button></div><div class="terminal-output" id="terminal-output" aria-live="polite"></div><form id="terminal-form" autocomplete="off"><label class="terminal-prompt" for="terminal-input">nomad@home:<span id="terminal-cwd">~</span>$</label><input id="terminal-input" name="command" aria-label="Digital garden command" autocapitalize="none" autocomplete="off" spellcheck="false"></form><p class="terminal-help">Type help for commands · Esc to close</p></section></body></html>
+<section class="home-section home-writing">
+  <div class="section-heading">
+    <h2 class="section-title">writing</h2>
+    <a class="section-more" href="/notes/">all notes →</a>
+  </div>
+  <ul class="writing-list"><li><a href="/vibe-coding/agent辅助学习/">Agent辅助学习</a></li><li><a href="/vibe-coding/lec01intro/">Lec01Intro</a></li><li><a href="/vibe-coding/lec02-prompt-engineering/">Lec02 Prompt Engineering</a></li><li><a href="/vibe-coding/lec03-版本管理/">Lec03 版本管理</a></li><li><a href="/vibe-coding/lec04-版本管理-2/">Lec04 版本管理（2）</a></li></ul>
+</section>
+</main>
+  <footer class="site-footer"><span>© 2026 nomad&#39;s blog</span><span class="footer-hint">press <kbd>`</kbd> to open the terminal</span></footer>
+  <section class="terminal" id="terminal" aria-label="Site terminal" hidden>
+    <button class="terminal-resize" id="terminal-resize" type="button" aria-label="Resize terminal" title="Drag to resize · arrow keys adjust height"></button>
+    <div class="terminal-heading">
+      <span id="terminal-title">nomad / terminal</span>
+      <button class="terminal-close" id="terminal-close" type="button" aria-label="Close terminal">×</button>
+    </div>
+    <div class="terminal-output" id="terminal-output" aria-live="polite"></div>
+    <form id="terminal-form" autocomplete="off">
+      <label class="terminal-prompt" for="terminal-input"><span class="prompt-user">nomad@home</span><span class="prompt-path" id="terminal-cwd">~</span></label>
+      <span class="terminal-field">
+        <span class="terminal-mirror" id="terminal-mirror" aria-hidden="true"></span>
+        <input id="terminal-input" name="command" aria-label="Digital garden command" autocapitalize="none" autocomplete="off" spellcheck="false">
+      </span>
+      <span class="terminal-rprompt" id="terminal-rprompt" aria-hidden="true"></span>
+    </form>
+    <p class="terminal-help">help for commands · Tab completes · → accepts a suggestion · Esc closes</p>
+  </section>
+</body>
+</html>

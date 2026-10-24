@@ -1,6 +1,43 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>变量作用域和函数 · nomad_</title><meta name="description" content="## 代码块、作用域与生存期 代码块 `{ ... }` 是局部区域。代码块可并列、可嵌套，但不能部分重叠。 ```text { var x = 3 { var y = x + 4 print(y) // 7 } print(x) // 3；此处不能访问 y } ``` - **作用域（scope）**：声明在源代码中"><script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script><link rel="stylesheet" href="/vendor/katex.min.css"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/knowledge.css"><script type="module" src="/main.js"></script></head><body><header class="site-header"><div class="site-location" title="nomad_/Notes/DIPL/变量作用域和函数"><a class="path-up" id="parent-link" href="/dipl/" rel="up" aria-label="返回上一级" aria-keyshortcuts="Alt+ArrowUp" title="返回上一级 (Alt+↑)">‹</a><a class="path-home" href="/">nomad_</a><span class="path-separator">/</span><a class="path-section" href="/notes/">Notes</a><span class="path-separator">/</span><details class="path-ellipsis"><summary aria-label="Show hidden path segments">…</summary><div class="path-ellipsis-menu"><a href="/dipl/">DIPL</a></div></details><span class="path-separator path-ellipsis">/</span><a class="path-middle" href="/dipl/">DIPL</a><span class="path-separator">/</span><span class="path-current">变量作用域和函数</span></div><nav aria-label="Primary navigation"><a class="active" aria-current="location" href="/notes/">Notes</a><a  href="/tags/">Tags</a><a  href="/about/">About</a><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">☾</button><button class="terminal-toggle" id="terminal-toggle" type="button" aria-label="Open terminal" title="Open terminal (&#96;)" aria-controls="terminal" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 7 5 5-5 5m8 0h6"/></svg></button></nav></header><main data-directory="/notes/dipl"><article><dl class="metadata"><div><dt>tags</dt><dd><a href="/tags/program-language/">program-language</a></dd></div></dl><div class="prose"><h2>代码块、作用域与生存期</h2>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>变量作用域和函数 · nomad_</title>
+  <meta name="description" content="代码块、作用域与生存期 代码块 { ... } 是局部区域。代码块可并列、可嵌套，但不能部分重叠。 作用域（scope） ：声明在源代码中可被引用的区域。通常从声明语句开始，到所属代码块结束。 生存期（lifetime） ：运行时为变量分配的存储空间存在的时间段。 引用名字时可依次判断： 1. 此处是否有可见的同名声明">
+  <script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script>
+  <link rel="preload" href="/fonts/jetbrains-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/main.js"></script>
+</head>
+<body class="page-note">
+  <header class="site-header">
+    <div class="site-location" title="nomad_/Notes/DIPL/变量作用域和函数"><a class="path-up" id="parent-link" href="/dipl/" rel="up" aria-label="返回上一级" aria-keyshortcuts="Alt+ArrowUp" title="返回上一级 (Alt+↑)">‹</a><a class="path-home" href="/">nomad_</a><span class="path-separator">/</span><a class="path-section" href="/notes/">Notes</a><span class="path-separator">/</span><details class="path-ellipsis"><summary aria-label="Show hidden path segments">…</summary><div class="path-ellipsis-menu"><a href="/dipl/">DIPL</a></div></details><span class="path-separator path-ellipsis">/</span><a class="path-middle" href="/dipl/">DIPL</a><span class="path-separator">/</span><span class="path-current">变量作用域和函数</span></div>
+    <nav class="site-nav" aria-label="Primary navigation">
+      <a class="active" aria-current="location" href="/notes/">Notes</a>
+      <a  href="/tags/">Tags</a>
+      <a  href="/about/">About</a>
+      <span class="site-nav-tools">
+        <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2m0 15v2M4.6 4.6 6 6m12 12 1.4 1.4M2.5 12h2m15 0h2M4.6 19.4 6 18M18 6l1.4-1.4"/></svg>
+        </button>
+        <button class="icon-button terminal-toggle" id="terminal-toggle" type="button" aria-label="Open terminal" title="Open terminal (&#96;)" aria-controls="terminal" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 7 5 5-5 5m8 0h6"/></svg>
+        </button>
+      </span>
+    </nav>
+  </header>
+  <main data-directory="/notes/dipl"><div class="note-layout">
+  <article>
+    <header class="note-header">
+      <h1 class="note-title">变量作用域和函数</h1>
+      <dl class="metadata"><div><dt>read</dt><dd>~11 min</dd></div><div><dt>tags</dt><dd><a href="/tags/program-language/">#program-language</a></dd></div></dl>
+    </header>
+    <div class="prose"><h2>代码块、作用域与生存期</h2>
 <p>代码块 <code>{ ... }</code> 是局部区域。代码块可并列、可嵌套，但不能部分重叠。</p>
-<pre class="hljs"><code>{
+<pre class="hljs" data-lang="text"><code>{
     var x = 3
     {
         var y = x + 4
@@ -20,7 +57,7 @@
 <li>对该声明而言，存储空间是否仍在生存期内？</li>
 </ol>
 <h3>遮盖（shadowing）</h3>
-<pre class="hljs"><code>{
+<pre class="hljs" data-lang="text"><code>{
     var x = 3
     {
         var x = 100
@@ -32,7 +69,7 @@
 <p>执行内层 <code>print(x)</code> 时，外层 <code>x</code> 的存储空间仍然存在；但名字 <code>x</code> 被内层声明遮盖，不能直接访问外层 <code>x</code>。这说明：作用域回答“能否用这个名字”，生存期回答“存储是否存在”。</p>
 <h3>声明位置很重要</h3>
 <p>在本课的伪代码模型中，变量从声明语句起才进入作用域：</p>
-<pre class="hljs"><code>{
+<pre class="hljs" data-lang="text"><code>{
     var x = 5
     {
         var y = x       // 此时读取外层 x，故 y = 5
@@ -43,7 +80,7 @@
 </code></pre>
 <h2>内联代码块与逻辑活动记录</h2>
 <p>**内联（in-line）**表示代码写在哪里，就在那里顺序执行。普通代码块、<code>if</code> 和 <code>while</code> 的语句体都属于内联代码块；函数体需在调用时跳转执行，之后再返回调用点。</p>
-<pre class="hljs"><code>{
+<pre class="hljs" data-lang="text"><code>{
     var x = 0
     {
         var y = x + 1
@@ -55,7 +92,7 @@ f()  // 函数调用：不是内联执行
 </code></pre>
 <p>**活动记录（activation record）**是运行时保存当前执行环境的数据结构，通常位于运行时栈上。它保存局部变量和中间计算结果；函数的活动记录还会保存参数、返回地址等。</p>
 <p>用教学模型追踪：</p>
-<pre class="hljs"><code>{
+<pre class="hljs" data-lang="text"><code>{
     var a = 1
     {
         var b = 3
@@ -68,7 +105,7 @@ f()  // 函数调用：不是内联执行
 }
 </code></pre>
 <p>执行到 <code>c = a + b</code> 时，逻辑栈为：</p>
-<pre class="hljs"><code>栈顶
+<pre class="hljs" data-lang="text"><code>栈顶
 [ 内层记录：c = 4 ]
 [ 中层记录：b = 3 ]
 [ 外层记录：a = 1 ]
@@ -76,7 +113,7 @@ f()  // 函数调用：不是内联执行
 </code></pre>
 <p>最内层块退出后，<code>c</code> 的逻辑绑定和生存期结束；中层的 <code>b</code> 仍存在。此时 <code>d</code> 尚未声明，所以还没有可访问、已初始化的 <code>d</code>。中层块退出后，<code>b</code>、<code>c</code>、<code>d</code> 都结束；外层仍可计算 <code>e = 6</code>。</p>
 <p>内层记录通常通过 **control link（控制链）**指向前一个活动记录。进入内层块时，环境指针改为指向新记录；退出时，沿控制链恢复到外层记录。</p>
-<pre class="hljs"><code>[ c = 4 | control link -&gt; 中层记录 ]
+<pre class="hljs" data-lang="text"><code>[ c = 4 | control link -&gt; 中层记录 ]
 [ b = 3 | control link -&gt; 外层记录 ]
 [ a = 1 | control link -&gt; 空 ]
 </code></pre>
@@ -84,16 +121,16 @@ f()  // 函数调用：不是内联执行
 <p>前一节的“每个块一条记录”是帮助理解作用域和进退栈的模型。真实编译器往往为<strong>整个函数</strong>创建一块连续的栈帧，并把嵌套块中的局部变量合并进去。</p>
 <p>对于大小在编译期可知的局部变量，编译器分析函数定义后，就能计算整个栈帧大小，以及每个参数、局部变量或临时值相对于帧基址的偏移。</p>
 <p>因此必须区分：</p>
-<pre class="hljs"><code>栈槽位已分配 ≠ 变量已进入作用域 ≠ 变量已有可用值
+<pre class="hljs" data-lang="text"><code>栈槽位已分配 ≠ 变量已进入作用域 ≠ 变量已有可用值
 </code></pre>
-<pre class="hljs"><code>func g(b) {
+<pre class="hljs" data-lang="text"><code>func g(b) {
     var c = f(b)  // c 的槽位可能已预留；f 返回前，c 没有可用值
     var d = c + 1 // d 的槽位也可能已预留；此行前 d 不在作用域内
 }
 </code></pre>
 <h3>典型 x86 栈帧布局</h3>
 <p>典型约定：栈从<strong>高地址向低地址</strong>生长。以调用 <code>f(a1, a2)</code> 为例：</p>
-<pre class="hljs"><code>                              高地址
+<pre class="hljs" data-lang="text"><code>                              高地址
     +----------------------------------+
     | 参数 a2                         |
     +----------------------------------+
@@ -121,7 +158,7 @@ f()  // 函数调用：不是内联执行
 <p>栈向低地址生长是常见 ABI 约定，并非所有机器的必然规则；活动记录的后进先出语义不依赖地址方向。</p>
 <h2>函数调用的活动记录</h2>
 <p>函数调用会创建新的活动记录；函数返回后，这条记录出栈。函数栈帧通常包含参数、局部变量和中间结果、返回地址、返回值保存位置，以及指向调用者记录的 control link。</p>
-<pre class="hljs"><code>func add1(n) {
+<pre class="hljs" data-lang="text"><code>func add1(n) {
     var t = n + 1
     return t
 }
@@ -134,7 +171,7 @@ var r = twice(3)
 </code></pre>
 <p>调用序列为：<code>主程序 -&gt; twice(3) -&gt; add1(3) -&gt; twice -&gt; 主程序</code>。</p>
 <p>当 <code>add1</code> 正在执行时，所有尚未返回的调用都在栈上：</p>
-<pre class="hljs"><code>栈顶
+<pre class="hljs" data-lang="text"><code>栈顶
 [ add1：n = 3，t；返回地址 -&gt; twice 中继续执行 * 2 ]
 [ twice：x = 3；返回地址 -&gt; 主程序中接收 r ]
 [ 主程序：r 的保存位置 ]
@@ -150,7 +187,7 @@ var r = twice(3)
 <li>左侧 <code>y</code> 表示应写入的存储位置，称为<strong>左值（lvalue）</strong>；</li>
 <li>右侧 <code>x</code> 表示从存储位置读出的内容，称为<strong>右值（rvalue）</strong>。</li>
 </ul>
-<pre class="hljs"><code>func inc(p) {
+<pre class="hljs" data-lang="text"><code>func inc(p) {
     p = p + 1
 }
 
@@ -164,7 +201,7 @@ inc(x)
 <p>传值只复制“值”，不等于对象一定不可修改：若复制的是对象引用这个值，调用者和形参仍可能指向同一对象，因此可通过该引用修改对象内部状态；但重新给形参赋一个新引用，不会改变调用者变量本身。</p>
 <h2>非局部变量访问：静态作用域、动态作用域与 access link</h2>
 <p>函数体中既非参数、也非本函数局部变量的变量称为<strong>非局部变量</strong>。例如 <code>g</code> 中的 <code>x</code>：</p>
-<pre class="hljs"><code>func h() {
+<pre class="hljs" data-lang="text"><code>func h() {
     let x = 1
     func g(z) { x + z }
     func f(y) {
@@ -202,7 +239,7 @@ inc(x)
 <h3>静态作用域的 access link</h3>
 <p>静态作用域下，函数的非局部变量由源码中的嵌套关系决定。运行时用 **access link（访问链/静态链）**连接到函数定义处的词法外层活动记录。</p>
 <p>当 <code>g(12)</code> 执行时：</p>
-<pre class="hljs"><code>控制链（调用关系）： g -&gt; f -&gt; h
+<pre class="hljs" data-lang="text"><code>控制链（调用关系）： g -&gt; f -&gt; h
 访问链（定义关系）： g -&gt; h
 </code></pre>
 <p><code>g</code> 的 access link 直接指向 <code>h</code> 的活动记录，因此读取到 <code>h.x = 1</code>；它不会沿 control link 去 <code>f</code> 中寻找同名 <code>x</code>。</p>
@@ -213,7 +250,7 @@ inc(x)
 <h3>实际语言通常采用哪一种？</h3>
 <p>现代主流通用语言几乎都采用<strong>静态（词法）作用域</strong>，例如 C/C++、Java、JavaScript、Python、Go、Rust、Kotlin 和仓颉。这样一个名字绑定到哪个声明，只由程序文本决定；阅读、重构、编译优化和类型检查都更可预测。</p>
 <p>动态作用域在现代通用语言中较少作为默认规则，但仍会以受限机制出现。例如 Common Lisp 的 special variable、Emacs Lisp 的动态绑定，以及一些脚本语言的局部动态绑定机制。它适合表达“当前配置、日志上下文、隐式参数”等随调用链传播的信息，但会使一个函数的行为依赖调用路径，因此不适合做普通局部变量的默认规则。</p>
-<pre class="hljs"><code>func outer() {
+<pre class="hljs" data-lang="text"><code>func outer() {
     let a = 10
     func p() { a }
     func q() {
@@ -227,7 +264,7 @@ inc(x)
 <p>静态作用域更精确的说法是：<strong>编译期</strong>根据函数定义所在的词法嵌套位置，把变量引用绑定到某个声明；<strong>运行期</strong>再用 access link 找到该声明当前对应的活动记录和存储位置。access link 是嵌套函数的一种常见实现手段，不是静态作用域定义本身；后续闭包还会处理函数返回后原栈帧已退出的情况。</p>
 <h2>尾调用与尾递归优化</h2>
 <p>若函数 <code>g</code> 对函数 <code>f</code> 的调用是 <code>g</code> 的最后一个动作，并且 <code>g</code> 将 <code>f</code> 的结果直接作为自己的结果返回，则该调用是<strong>尾调用（tail call）</strong>。</p>
-<pre class="hljs"><code>func g(x) {
+<pre class="hljs" data-lang="text"><code>func g(x) {
     if (x &gt; 0) {
         return f(x)       // 尾调用：f 返回后，g 没有工作要做
     } else {
@@ -238,13 +275,13 @@ inc(x)
 <p>尾调用的判断标准不是“它是否写在函数体最后一行”，而是“被调用函数返回后，调用者是否还要继续计算”。</p>
 <h3>尾调用优化（TCO）</h3>
 <p>普通调用会保留调用者栈帧，直到被调用者返回；尾调用时，这个调用者栈帧已无用。运行时可复用它，或先弹出再压入被调用者栈帧：</p>
-<pre class="hljs"><code>普通调用：caller 栈帧 -&gt; callee 栈帧 -&gt; callee 返回 -&gt; caller 继续计算
+<pre class="hljs" data-lang="text"><code>普通调用：caller 栈帧 -&gt; callee 栈帧 -&gt; callee 返回 -&gt; caller 继续计算
 尾调用：  caller 栈帧 -&gt; 直接改为 callee 栈帧 -&gt; 返回给 caller 的 caller
 </code></pre>
 <p>实现上，callee 继承 caller 的返回地址和 control link；返回时直接跳过 caller，回到 caller 的调用者。</p>
 <h3>尾递归</h3>
 <p>函数在尾位置调用自己称为<strong>尾递归</strong>。例如：</p>
-<pre class="hljs"><code>func grow(x, y) {
+<pre class="hljs" data-lang="text"><code>func grow(x, y) {
     if (x &gt; y) {
         return x
     } else {
@@ -253,7 +290,7 @@ inc(x)
 }
 </code></pre>
 <p>若支持尾调用优化，<code>grow(1, y)</code> 的每次递归都可复用同一栈帧，栈空间为 <code>O(1)</code>；其效果等价于：</p>
-<pre class="hljs"><code>func growIter(y) {
+<pre class="hljs" data-lang="text"><code>func growIter(y) {
     var x = 1
     while (!(x &gt; y)) {
         x = 2 * x
@@ -262,7 +299,7 @@ inc(x)
 }
 </code></pre>
 <p>判断示例：</p>
-<pre class="hljs"><code>func a(x) { return b(x) }          // b 是尾调用
+<pre class="hljs" data-lang="text"><code>func a(x) { return b(x) }          // b 是尾调用
 func c(x) {                         // b 不是尾调用
     var y = b(x)
     return y + 1                    // b 返回后仍要加 1
@@ -274,13 +311,13 @@ func d(x) {
 </code></pre>
 <h3>阶乘改写：把“返回后要做的乘法”提前累计</h3>
 <p>普通阶乘不是尾递归：</p>
-<pre class="hljs"><code>func fact(n) {
+<pre class="hljs" data-lang="text"><code>func fact(n) {
     if (n &lt;= 1) { return 1 }
     return n * fact(n - 1)  // fact 返回后仍要乘 n
 }
 </code></pre>
 <p>引入累加器 <code>acc</code>，让它保存“已经完成的乘积”：</p>
-<pre class="hljs"><code>func factIter(n, acc) {
+<pre class="hljs" data-lang="text"><code>func factIter(n, acc) {
     if (n &lt;= 1) {
         return acc
     }
@@ -292,7 +329,7 @@ func fact(n) {
 }
 </code></pre>
 <p>例如 <code>fact(4)</code> 的状态变化为：</p>
-<pre class="hljs"><code>factIter(4, 1)
+<pre class="hljs" data-lang="text"><code>factIter(4, 1)
 -&gt; factIter(3, 4)
 -&gt; factIter(2, 12)
 -&gt; factIter(1, 24)
@@ -301,9 +338,9 @@ func fact(n) {
 <p>每一次递归调用后，调用者都没有剩余计算，因此尾调用优化可复用同一个栈帧。这里 <code>acc</code> 不只是“额外变量”，而是把原来等待递归返回后才执行的乘法工作，提前编码进下一次调用的参数中。</p>
 <h2>高阶函数与闭包：函数作为参数</h2>
 <p><strong>高阶函数</strong>把函数当作参数或返回值。函数若能引用非局部变量，传递它时就不能只传代码地址，还必须携带它定义时所需的环境：</p>
-<pre class="hljs"><code>闭包（closure）= &lt;env, code&gt;
+<pre class="hljs" data-lang="text"><code>闭包（closure）= &lt;env, code&gt;
 </code></pre>
-<pre class="hljs"><code>func f0() {
+<pre class="hljs" data-lang="text"><code>func f0() {
     let x = 4
     func f(y) { x * y }
     func g(h) {
@@ -318,7 +355,7 @@ func fact(n) {
 <p>不能让 <code>h(3)</code> 使用 <code>g</code> 中的 <code>x = 7</code>：那等于按“谁调用我”解析变量，得到的是动态作用域的行为；而静态作用域要求 <code>f</code> 中的 <code>x</code> 始终绑定到 <code>f</code> 定义处的 <code>f0.x</code>。因此闭包传递的是 <code>f</code> 的代码与 <code>f0</code> 环境，而不是把 <code>f</code> 交给 <code>g</code> 后重新采用 <code>g</code> 的局部变量。</p>
 <h2>函数作为返回值与环境逃逸</h2>
 <p>函数作为参数时，函数定义处的活动记录通常仍在栈上；函数作为返回值时，调用者拿到返回的函数后，原函数可能已经返回，其栈帧已被弹出。</p>
-<pre class="hljs"><code>func makeAdder(n) {
+<pre class="hljs" data-lang="text"><code>func makeAdder(n) {
     return { x =&gt; x + n }
 }
 
@@ -326,18 +363,18 @@ let add5 = makeAdder(5)
 add5(3)  // 8
 </code></pre>
 <p><code>makeAdder(5)</code> 返回的不是单独一段 <code>x =&gt; x + n</code> 的代码，而是闭包：</p>
-<pre class="hljs"><code>&lt; env = { n = 5 }, code = x =&gt; x + n &gt;
+<pre class="hljs" data-lang="text"><code>&lt; env = { n = 5 }, code = x =&gt; x + n &gt;
 </code></pre>
 <p>调用 <code>makeAdder</code> 结束后，若 <code>n = 5</code> 只存在该函数的栈帧中，栈帧出栈便会失效，之后的 <code>add5(3)</code> 无法读取 <code>n</code>。因此返回的闭包必须使所捕获环境继续存活；概念上可把环境放到堆上，并由垃圾回收在闭包不再可达时回收。</p>
 <h3>代码不会动态生成</h3>
 <p>闭包可以在运行时创建，但通常不会在运行时编译新代码。<code>makeAdder</code> 的代码和 lambda 的代码在编译期已存在；每次调用只是创建不同的环境实例：</p>
-<pre class="hljs"><code>makeAdder(5)  -&gt; &lt; { n = 5 }, code = x =&gt; x + n &gt;
+<pre class="hljs" data-lang="text"><code>makeAdder(5)  -&gt; &lt; { n = 5 }, code = x =&gt; x + n &gt;
 makeAdder(10) -&gt; &lt; { n = 10 }, code = x =&gt; x + n &gt;
 </code></pre>
 <p>两者共享同一段代码，却拥有不同的 <code>n</code>。</p>
 <h3>函数值可携带私有状态</h3>
 <p>若捕获的变量可变，同一个闭包可在多次调用间保存状态：</p>
-<pre class="hljs"><code>func makeCounter() {
+<pre class="hljs" data-lang="text"><code>func makeCounter() {
     var count = 0
     return {
         count = count + 1
@@ -350,7 +387,7 @@ c1()  // 1
 c1()  // 2
 </code></pre>
 <p>这里闭包环境包含可变单元 <code>count</code>。<code>makeCounter</code> 返回后该单元仍需存在；<code>c1</code> 每次调用都访问同一个单元。另一次 <code>makeCounter()</code> 返回的闭包会拥有独立的 <code>count</code>。</p>
-<pre class="hljs"><code>let c1 = makeCounter()
+<pre class="hljs" data-lang="text"><code>let c1 = makeCounter()
 let c2 = makeCounter()
 c1()  // 1
 c1()  // 2
@@ -359,7 +396,7 @@ c2()  // 1
 <p><code>c1</code> 与 <code>c2</code> 共享同一段计数器代码，但各自拥有独立的闭包环境（不同的 <code>count</code> 单元）。不能仅说“创建了新的活动记录”：<code>makeCounter</code> 的活动记录已经返回；真正继续存活的是被返回闭包持有的环境。</p>
 <h3>逃逸分析：决定环境能否留在栈上</h3>
 <p>**逃逸分析（escape analysis）**判断对象、闭包或捕获变量是否可能在创建它的函数返回后仍被访问。编译器会追踪闭包值和环境引用是否被返回、存入全局变量或堆对象、传给无法分析的外部调用等；存在这类路径时，该环境发生逃逸。</p>
-<pre class="hljs"><code>func localUse() {
+<pre class="hljs" data-lang="text"><code>func localUse() {
     let x = 1
     let f = { =&gt; x + 1 }
     f()                  // f 只在 localUse 内调用，不逃逸
@@ -375,7 +412,7 @@ func returnedUse() {
 <h3>闭包变换：把隐式环境改为显式参数</h3>
 <p>**闭包变换（closure conversion）**将嵌套函数改写为顶层函数，并把其自由变量收集到环境对象中。顶层函数显式接收环境；函数值则表示为“代码指针 + 环境对象”。这把源语言中隐式的闭包/access link 变成编译后可直接表示的数据。</p>
 <p>变换前：</p>
-<pre class="hljs"><code>func mkCounter() {
+<pre class="hljs" data-lang="text"><code>func mkCounter() {
     var count = 0
     return {
         count = count + 1
@@ -384,7 +421,7 @@ func returnedUse() {
 }
 </code></pre>
 <p>变换后可概念化为：</p>
-<pre class="hljs"><code>class CounterEnv {
+<pre class="hljs" data-lang="text"><code>class CounterEnv {
     var count: Int
 }
 
@@ -399,5 +436,28 @@ func mkCounter(): () -&gt; Int {
 }
 </code></pre>
 <p>其中 <code>Closure(counterCode, env)</code> 是概念记法；调用返回的函数等价于执行 <code>counterCode(env)</code>。每次 <code>mkCounter()</code> 创建独立的 <code>env</code>，所以不同计数器互不影响；同一个计数器的多次调用共享同一 <code>count</code>。环境只需保存函数实际使用的自由变量，而非整个外层活动记录。结合逃逸分析，只有被返回或传出的 <code>env</code> 才必须长期存活；不逃逸环境仍可使用栈分配或被进一步优化掉。</p>
-</div></article>
-</main><section class="terminal" id="terminal" aria-label="Site terminal" hidden><button class="terminal-resize" id="terminal-resize" type="button" aria-label="Resize terminal" title="Drag to resize · arrow keys adjust height"></button><div class="terminal-heading"><span id="terminal-title">nomad / terminal</span><button class="terminal-close" id="terminal-close" type="button" aria-label="Close terminal">×</button></div><div class="terminal-output" id="terminal-output" aria-live="polite"></div><form id="terminal-form" autocomplete="off"><label class="terminal-prompt" for="terminal-input">nomad@home:<span id="terminal-cwd">~</span>$</label><input id="terminal-input" name="command" aria-label="Digital garden command" autocapitalize="none" autocomplete="off" spellcheck="false"></form><p class="terminal-help">Type help for commands · Esc to close</p></section></body></html>
+</div>
+    
+  </article>
+</div>
+</main>
+  <footer class="site-footer"><span>© 2026 nomad&#39;s blog</span><span class="footer-hint">press <kbd>`</kbd> to open the terminal</span></footer>
+  <section class="terminal" id="terminal" aria-label="Site terminal" hidden>
+    <button class="terminal-resize" id="terminal-resize" type="button" aria-label="Resize terminal" title="Drag to resize · arrow keys adjust height"></button>
+    <div class="terminal-heading">
+      <span id="terminal-title">nomad / terminal</span>
+      <button class="terminal-close" id="terminal-close" type="button" aria-label="Close terminal">×</button>
+    </div>
+    <div class="terminal-output" id="terminal-output" aria-live="polite"></div>
+    <form id="terminal-form" autocomplete="off">
+      <label class="terminal-prompt" for="terminal-input"><span class="prompt-user">nomad@home</span><span class="prompt-path" id="terminal-cwd">~</span></label>
+      <span class="terminal-field">
+        <span class="terminal-mirror" id="terminal-mirror" aria-hidden="true"></span>
+        <input id="terminal-input" name="command" aria-label="Digital garden command" autocapitalize="none" autocomplete="off" spellcheck="false">
+      </span>
+      <span class="terminal-rprompt" id="terminal-rprompt" aria-hidden="true"></span>
+    </form>
+    <p class="terminal-help">help for commands · Tab completes · → accepts a suggestion · Esc closes</p>
+  </section>
+</body>
+</html>

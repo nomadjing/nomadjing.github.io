@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>类型系统 · nomad_</title>
+  <meta name="description" content="类型系统的作用 类型系统由类型定义和类型检查规则组成，用规则约束表达式的组合，防止某些不合法的操作。例如，在只允许整数相加的规则下， 3 + 4 合法， 3 + true 不合法。 不同类型之间能否运算取决于具体规则，并非一律禁止；规则可能允许混合数值运算或类型转换。 类型信息还帮助读者理解程序，并为编译器优化提供依据">
+  <script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script>
+  <link rel="preload" href="/fonts/jetbrains-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/main.js"></script>
+</head>
+<body class="page-note">
+  <header class="site-header">
+    <div class="site-location" title="nomad_/Notes/DIPL/类型系统"><a class="path-up" id="parent-link" href="/dipl/" rel="up" aria-label="返回上一级" aria-keyshortcuts="Alt+ArrowUp" title="返回上一级 (Alt+↑)">‹</a><a class="path-home" href="/">nomad_</a><span class="path-separator">/</span><a class="path-section" href="/notes/">Notes</a><span class="path-separator">/</span><details class="path-ellipsis"><summary aria-label="Show hidden path segments">…</summary><div class="path-ellipsis-menu"><a href="/dipl/">DIPL</a></div></details><span class="path-separator path-ellipsis">/</span><a class="path-middle" href="/dipl/">DIPL</a><span class="path-separator">/</span><span class="path-current">类型系统</span></div>
+    <nav class="site-nav" aria-label="Primary navigation">
+      <a class="active" aria-current="location" href="/notes/">Notes</a>
+      <a  href="/tags/">Tags</a>
+      <a  href="/about/">About</a>
+      <span class="site-nav-tools">
+        <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2m0 15v2M4.6 4.6 6 6m12 12 1.4 1.4M2.5 12h2m15 0h2M4.6 19.4 6 18M18 6l1.4-1.4"/></svg>
+        </button>
+        <button class="icon-button terminal-toggle" id="terminal-toggle" type="button" aria-label="Open terminal" title="Open terminal (&#96;)" aria-controls="terminal" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 7 5 5-5 5m8 0h6"/></svg>
+        </button>
+      </span>
+    </nav>
+  </header>
+  <main data-directory="/notes/dipl"><div class="note-layout">
+  <article>
+    <header class="note-header">
+      <h1 class="note-title">类型系统</h1>
+      <dl class="metadata"><div><dt>read</dt><dd>~34 min</dd></div><div><dt>tags</dt><dd><a href="/tags/program-language/">#program-language</a></dd></div></dl>
+    </header>
+    <div class="prose"><h2>类型系统的作用</h2>
+<p>类型系统由类型定义和类型检查规则组成，用规则约束表达式的组合，防止某些不合法的操作。例如，在只允许整数相加的规则下，<code>3 + 4</code> 合法，<code>3 + true</code> 不合法。</p>
+<p>不同类型之间能否运算取决于具体规则，并非一律禁止；规则可能允许混合数值运算或类型转换。</p>
+<p>类型信息还帮助读者理解程序，并为编译器优化提供依据。类型系统会限制允许编写的程序；通过类型检查只代表满足该系统检查的约束，不能保证业务逻辑正确。</p>
+<p>例如，<code>map : (A -&gt; B) -&gt; List&lt;A&gt; -&gt; List&lt;B&gt;</code> 表示：给定一个把 A 转换为 B 的函数和一个 A 的列表，返回一个 B 的列表。类型说明输入输出的结构，但通常不能保证实现保持列表长度或满足预期功能。</p>
+<h2>静态与动态类型检查</h2>
+<p>核心区别是检查发生的时机，以及检查依据的信息。</p>
+<ul>
+<li>静态类型检查：在程序运行前，依据代码及类型信息检查表达式是否符合规则。变量没有显式类型标注，也可能通过类型推断完成静态检查。</li>
+<li>动态类型检查：在程序运行时，依据实际参与操作的值检查是否合法。同一个变量名可以先后绑定不同类型的值；并不是原来的值变成了另一种类型。</li>
+</ul>
+<p>假设加法只接受整数，下面的 Python 代码在执行加法时才遇到类型错误：</p>
+<pre class="hljs" data-lang="python"><code>x = <span class="hljs-string">&quot;hello&quot;</span>
+y = x + <span class="hljs-number">1</span>
+</code></pre>
+<p>在要求加法操作数均为整数的静态类型系统中，可以在运行前拒绝这样的表达式。</p>
+<p>静态类型系统也可能支持联合类型、类型收窄和混合数值运算。一个程序能否通过检查，取决于系统的具体规则和分析能力。静态／动态类型不能直接等同于编译／解释执行，也不能单凭这一分类断定性能或可靠性。</p>
+<h2>类型判断与推理规则</h2>
+<p><code>⊢ e : T</code> 表示表达式 e 具有类型 T，是一个类型判断，不是给 e 赋值，也不是计算 e 的结果。涉及变量时需要类型环境，后续写作 <code>Γ ⊢ e : T</code>。</p>
+<p>推理规则的横线上方列出前提，下方给出结论。所有前提成立，才能按该规则得到结论；没有前提的规则可直接使用，例如 <code>⊢ true : Bool</code>。</p>
+<pre class="hljs" data-lang="text"><code>⊢ e1 : Bool       ⊢ e2 : Bool
+----------------------------
+     ⊢ e1 and e2 : Bool
+</code></pre>
+<p>此规则要求两个操作数都具有布尔类型。规则中的 e1、e2 可以替换为具体表达式，各个前提又可以由其他规则推导，逐步构成类型推导树。</p>
+<pre class="hljs" data-lang="text"><code>⊢ b : Bool       ⊢ e1 : T       ⊢ e2 : T
+----------------------------------------
+       ⊢ if b then e1 else e2 : T
+</code></pre>
+<p>这里要求条件为布尔类型、两个分支具有相同类型 T。按这组规则，即使条件是常量 true，也不能跳过对另一分支的检查。不能用这条规则推导出类型，不代表所有其他类型系统也会拒绝该表达式。</p>
+<h2>引入规则与消除规则</h2>
+<ul>
+<li>引入规则（Introduction）说明如何构造某种类型的值；</li>
+<li>消除规则（Elimination）说明如何使用该类型的值。</li>
+</ul>
+<p>Bool 的基本值是 <code>true</code> 和 <code>false</code>，对应无前提的引入规则：</p>
+<pre class="hljs" data-lang="text"><code>--------------       ---------------
+⊢ true : Bool        ⊢ false : Bool
+</code></pre>
+<p><code>if b then e1 else e2</code> 是 Bool 的消除形式：使用布尔条件 b 选择分支。其类型规则要求 <code>b : Bool</code>，两个分支都具有类型 T，结果具有类型 T。</p>
+<p>消除并不是删除值或类型，而是使用该类型提供的信息；结果也不必与被使用的值具有相同类型。例如 <code>if true then 3 else 4</code> 使用 Bool，产生 Int。引入／消除的分类要明确针对哪种类型。</p>
+<h2>积类型</h2>
+<p>积类型 <code>A × B</code> 的一个值同时包含一个 A 值和一个 B 值，写成二元组 <code>(a, b)</code>。例如 <code>(3, true) : Int × Bool</code>；两个分量不必同类型，位置有意义。</p>
+<p>引入规则通过两个分量构造二元组：</p>
+<pre class="hljs" data-lang="text"><code>⊢ e1 : A       ⊢ e2 : B
+------------------------
+⊢ (e1, e2) : A × B
+</code></pre>
+<p>消除规则通过投影取出分量：</p>
+<pre class="hljs" data-lang="text"><code>⊢ p : A × B           ⊢ p : A × B
+-------------         -------------
+⊢ fst p : A           ⊢ snd p : B
+</code></pre>
+<p><code>fst (3, true)</code> 得到整数 <code>3</code>，<code>snd (3, true)</code> 得到布尔值 <code>true</code>。构造时需要两个分量，使用时可以取第一个、第二个或两者。</p>
+<p>若 A 有 m 个可能的值，B 有 n 个可能的值，则每个 A 值可以与每个 B 值组合，<code>A × B</code> 有 m × n 个值。例如 <code>Bool × Bool</code> 有 4 个值。多元组是二元组的推广，记录／结构体可以视为带字段标签的元组。</p>
+<h2>和类型</h2>
+<p>和类型 <code>A + B</code> 的值是带标签的选择：或者包含一个 A 值，或者包含一个 B 值。<code>+</code> 是类型构造符，不是数值加法；不同于积类型，它不要求同时提供两个分量。</p>
+<p>约定目标类型为 <code>Int + Bool</code> 时，<code>left 3</code> 表示整数分支，<code>right true</code> 表示布尔分支。标签区分分支，即使两边类型相同也不能省去：在 <code>Bool + Bool</code> 中，<code>left true</code> 和 <code>right true</code> 是不同的值。</p>
+<p>引入规则选择一个分支构造值。以下 left/right 都指定以 <code>A + B</code> 为目标类型：</p>
+<pre class="hljs" data-lang="text"><code>⊢ a : A                 ⊢ b : B
+----------------        ----------------
+⊢ left a : A + B        ⊢ right b : A + B
+</code></pre>
+<p>消除通过 case／模式匹配区分标签、取出对应分支的值，再执行该分支的处理。完整处理一个 <code>A + B</code> 值必须为两种情况准备处理逻辑，并使两个分支返回同一种结果类型 T。</p>
+<pre class="hljs" data-lang="text"><code>⊢ e : A + B       ⊢ f : A -&gt; T       ⊢ g : B -&gt; T
+-------------------------------------------------
+              ⊢ case e do f g : T
+</code></pre>
+<p>若 A 有 m 个值、B 有 n 个值，则带标签的 <code>A + B</code> 有 m + n 个值。例如 <code>Bool + Bool</code> 有 <code>left true</code>、<code>left false</code>、<code>right true</code>、<code>right false</code> 四个值。</p>
+<h2>Unit 与 Nothing</h2>
+<p>Unit 恰好有一个值，通常写为 <code>()</code>，可理解为空元组。它表示操作正常完成，但不携带额外的结果信息。例如输出操作可以具有 <code>String -&gt; Unit</code> 类型。</p>
+<p>Nothing 没有任何值，可理解为零个分支的和类型。返回类型为 Nothing 的函数不能正常返回一个结果，例如一直循环或终止执行的函数。Nothing 不等于 <code>null</code> 或 <code>None</code>：后两者是值／构造形式，Nothing 没有值。</p>
+<pre class="hljs" data-lang="text"><code>T × Unit    ≅ T
+T + Nothing ≅ T
+</code></pre>
+<p>第一式中 <code>(t, ())</code> 与 t 可以相互转换，Unit 分量不增加选择；第二式只能构造 <code>left t</code>，因为不可能提供 Nothing 值构造右分支。这里的等价是可建立相互可逆的转换，不表示类型写法或值的表示完全相同。</p>
+<p>若 T 有 n 个值，以上两式对应 <code>n × 1 = n</code> 和 <code>n + 0 = n</code>。Unit 是积类型的单位元，Nothing 是和类型的单位元。</p>
+<p>具体表示仍须保留结构：<code>Bool × Unit</code> 的值是 <code>(true, ())</code> 与 <code>(false, ())</code>；<code>Bool + Nothing</code> 的值是 <code>left true</code> 与 <code>left false</code>，而不是裸的 <code>true</code>、<code>false</code>。</p>
+<h2>函数类型与类型环境</h2>
+<h3>类型环境与函数调用</h3>
+<p>类型环境 Γ 记录当前可用变量的类型，不记录它们运行时的具体值。例如 <code>Γ = {x : Int, f : Int -&gt; Bool}</code>。</p>
+<p><code>Γ ⊢ e : T</code> 读作“在类型环境 Γ 下，表达式 e 具有类型 T”。变量的类型通过环境查找得到，例如上述环境下有 <code>Γ ⊢ x : Int</code>。</p>
+<p>函数类型 <code>A -&gt; B</code> 表示参数类型为 A、正常返回的结果类型为 B。函数调用是函数类型的消除形式：</p>
+<pre class="hljs" data-lang="text"><code>Γ ⊢ f : A -&gt; B       Γ ⊢ e : A
+------------------------------
+         Γ ⊢ f(e) : B
+</code></pre>
+<p>例如 <code>f : Int -&gt; Bool</code>、<code>x : Int</code> 时，<code>f(x) : Bool</code>。这个判断说明返回结果的类型，不能确定具体返回 true 还是 false。在这组简单规则下，<code>f(true)</code> 不满足参数类型要求。</p>
+<h3>函数定义：引入规则</h3>
+<p><code>λx : A. e</code> 表示一个参数 x 类型为 A、函数体为 e 的匿名函数。检查函数体时，将参数绑定 <code>x : A</code> 加入当前类型环境；如果函数体类型为 B，则函数类型为 <code>A -&gt; B</code>。</p>
+<pre class="hljs" data-lang="text"><code>Γ, x : A ⊢ e : B
+------------------------
+Γ ⊢ λx : A. e : A -&gt; B
+</code></pre>
+<p><code>Γ, x : A</code> 是检查函数体时扩展的环境，参数 x 的绑定只在其作用域内有效，并不因此成为外层可用变量。</p>
+<p>例如 <code>λx : Int. x + 1 : Int -&gt; Int</code>，因为在包含 <code>x : Int</code> 的环境中，整数加法规则给出 <code>x + 1 : Int</code>。<code>λx : Int. true : Int -&gt; Bool</code> 同样合法：函数体可以不使用参数，参数类型与返回类型也不必相同。</p>
+<p>函数定义是函数类型的引入，函数调用是函数类型的消除。定义时检查函数体的类型，不需要实际调用函数。</p>
+<h2>实际用法：带数据的枚举</h2>
+<p>课件用仓颉枚举表示算术表达式：</p>
+<pre class="hljs" data-lang="text"><code>enum Expr =
+  | CONST(Int)
+  | ADD(Expr, Expr)
+  | MUL(Expr, Expr)
+</code></pre>
+<p>一个 Expr 值选择其中一个分支。CONST、ADD、MUL 是标签／构造器；CONST 携带一个整数，ADD 和 MUL 各携带两个 Expr 值。分支之间是和类型关系，同一分支内部的多个字段是积类型关系，其结构可写作递归类型方程：</p>
+<pre class="hljs" data-lang="text"><code>Expr ≅ Int + (Expr × Expr) + (Expr × Expr)
+</code></pre>
+<p>例如 <code>ADD(CONST(3), CONST(4)) : Expr</code> 表示加法语法树，构造它并不会自动计算出整数 7。<code>ADD</code> 与 <code>MUL</code> 的载荷类型相同，但标签不同，代表不同运算。</p>
+<p>求值函数 <code>eval : Expr -&gt; Int</code> 通过模式匹配消除 Expr：CONST 分支取出整数，ADD／MUL 分支递归求值两个子表达式，再做对应运算。三个分支都返回 Int。</p>
+<h2>从类型规则到检查程序</h2>
+<p><code>check(e, T)</code> 判断表达式 e 是否具有目标类型 T，返回的是检查结果 true／false，而不是 e 的求值结果。涉及变量时，还需传入类型环境 Γ。</p>
+<p>检查器按表达式的语法结构选择规则，再递归检查各个前提。以布尔常量、逻辑与及条件表达式为例：</p>
+<pre class="hljs" data-lang="text"><code>check(true, T)  = (T == Bool)
+check(false, T) = (T == Bool)
+
+check(e1 and e2, T) =
+  (T == Bool) and check(e1, Bool) and check(e2, Bool)
+
+check(if b then e1 else e2, T) =
+  check(b, Bool) and check(e1, T) and check(e2, T)
+</code></pre>
+<p>前提中的“且”表示所有检查条件都必须通过。条件表达式的两个分支都按目标类型 T 检查，不是执行 b 后仅检查被选中的分支。</p>
+<p>实现检查器不仅要验证规则的前提，也要确认规则结论的类型与目标类型匹配。</p>
+<h2>联合类型：放宽可能的值，使用时分情况</h2>
+<p>联合类型（union，也称并类型）<code>A | B</code> 表示值属于 A 或 B；按集合论直觉，其值集合为 <code>A ∪ B</code>。例如 <code>string | number</code> 接受字符串或数字，<code>&quot;read&quot; | &quot;write&quot;</code> 表示有限的两种选择，<code>string | null</code> 表示可能为空的字符串。</p>
+<pre class="hljs" data-lang="typescript"><code><span class="hljs-keyword">function</span> <span class="hljs-title function_">padLeft</span>(<span class="hljs-params"><span class="hljs-attr">value</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">padding</span>: <span class="hljs-built_in">string</span> | <span class="hljs-built_in">number</span></span>): <span class="hljs-built_in">string</span> {
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> padding === <span class="hljs-string">&quot;number&quot;</span>) {
+    <span class="hljs-keyword">return</span> <span class="hljs-string">&quot; &quot;</span>.<span class="hljs-title function_">repeat</span>(padding) + value;
+  }
+  <span class="hljs-keyword">return</span> padding + value;
+}
+</code></pre>
+<p>这个签名排除 boolean 等输入，同时要求函数体处理两种情况。使用 <code>any</code> 会放弃相应检查；联合类型保留了“只接受这些可能”的约束。</p>
+<h3>引入、消除与子类型方向</h3>
+<p>联合的引入只放宽类型，不需要 <code>left</code>／<code>right</code> 包装：</p>
+<pre class="hljs" data-lang="text"><code>Γ ⊢ e : A                  Γ ⊢ e : B
+----------------           ----------------
+Γ ⊢ e : A | B              Γ ⊢ e : A | B
+</code></pre>
+<p>只有 <code>x : string | number</code> 时，不能直接使用 <code>x.length</code>，因为 number 没有这一属性。可以使用所有成员都支持的操作；若操作只适用于其中一类，必须先获得相应的分支信息。</p>
+<p>消除规则可用以下示意表示；<code>typecase</code> 表示有可靠类型测试的分情况处理，不是所有语言都提供的具体语法：</p>
+<pre class="hljs" data-lang="text"><code>Γ ⊢ e : A | B     Γ, x : A ⊢ e1 : C     Γ, y : B ⊢ e2 : C
+---------------------------------------------------------
+       Γ ⊢ typecase e of { A x =&gt; e1; B y =&gt; e2 } : C
+</code></pre>
+<p>两种可能都要得到结果类型 C。若成员重叠，还须明确测试顺序及剩余情况；无标签联合不能恢复“这个值最初从哪一边加入”。在支持联合结果的系统中，不同分支的结果也可以放宽到共同的联合类型 C。</p>
+<p>写 <code>A ≤ B</code> 表示 A 是 B 的子类型，即 A 的值可用在要求 B 的位置。集合语义下：</p>
+<pre class="hljs" data-lang="text"><code>A ≤ A | B，B ≤ A | B
+A | B ≤ C  当且仅当  A ≤ C 且 B ≤ C
+</code></pre>
+<p>因此联合是 A、B 的最小上界（join）：包含两者，又不额外扩大范围。可能的值越多，对未知值能直接使用的专属能力通常越少。</p>
+<h3>类型收窄与判别联合</h3>
+<p>类型收窄（narrowing）利用控制流中的事实，缩小某个程序位置上变量的可能类型。上例中，<code>typeof padding === &quot;number&quot;</code> 为真时 padding 是 number；该分支已经 return，后续代码只能来自字符串情况。</p>
+<p>常见守卫有 <code>typeof</code>、<code>instanceof</code>、<code>in</code> 与判别字段。收窄依赖可达路径、赋值和分支合流，不能概括成“离开 if 就必定恢复原类型”。<a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#control-flow-analysis">TypeScript 的控制流分析说明</a>给出了提前返回后继续保持收窄的例子。</p>
+<pre class="hljs" data-lang="typescript"><code><span class="hljs-keyword">type</span> <span class="hljs-title class_">Shape</span> =
+  | { <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;circle&quot;</span>; <span class="hljs-attr">r</span>: <span class="hljs-built_in">number</span> }
+  | { <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;rect&quot;</span>; <span class="hljs-attr">w</span>: <span class="hljs-built_in">number</span>; <span class="hljs-attr">h</span>: <span class="hljs-built_in">number</span> };
+
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">area</span>(<span class="hljs-params"><span class="hljs-attr">s</span>: <span class="hljs-title class_">Shape</span></span>): <span class="hljs-built_in">number</span> {
+  <span class="hljs-keyword">switch</span> (s.<span class="hljs-property">kind</span>) {
+    <span class="hljs-keyword">case</span> <span class="hljs-string">&quot;circle&quot;</span>: <span class="hljs-keyword">return</span> <span class="hljs-title class_">Math</span>.<span class="hljs-property">PI</span> * s.<span class="hljs-property">r</span> ** <span class="hljs-number">2</span>;
+    <span class="hljs-keyword">case</span> <span class="hljs-string">&quot;rect&quot;</span>: <span class="hljs-keyword">return</span> s.<span class="hljs-property">w</span> * s.<span class="hljs-property">h</span>;
+    <span class="hljs-attr">default</span>: {
+      <span class="hljs-keyword">const</span> <span class="hljs-attr">unreachable</span>: <span class="hljs-built_in">never</span> = s;
+      <span class="hljs-keyword">return</span> unreachable;
+    }
+  }
+}
+</code></pre>
+<p>共同的字面量字段 kind 使两个对象分支可区分，这叫判别联合。若以后增加一种 Shape 却没有增加处理分支，默认分支中 <code>s : never</code> 的检查会失败；这里用显式检查表达穷尽性要求，普通 switch 并不总会自动拒绝遗漏。</p>
+<p>结果类型同样可以写成 <code>{ ok: true; value: T } | { ok: false; error: E }</code>。标签让成功与失败即使携带同类型数据也能区分。有限状态、可空值和接受多种参数形态的 API 都是联合的典型用途；TypeScript 的严格空值检查需要开启 <code>strictNullChecks</code>。</p>
+<h2>交叉类型：同一个值同时满足多个要求</h2>
+<p>交叉类型（intersection，也称交类型）<code>A &amp; B</code> 表示同一个值同时属于 A 和 B；集合直觉为 <code>A ∩ B</code>。</p>
+<pre class="hljs" data-lang="typescript"><code><span class="hljs-keyword">type</span> <span class="hljs-title class_">Named</span> = { <span class="hljs-attr">name</span>: <span class="hljs-built_in">string</span> };
+<span class="hljs-keyword">type</span> <span class="hljs-title class_">Aged</span> = { <span class="hljs-attr">age</span>: <span class="hljs-built_in">number</span> };
+<span class="hljs-keyword">type</span> <span class="hljs-title class_">Person</span> = <span class="hljs-title class_">Named</span> &amp; <span class="hljs-title class_">Aged</span>;
+<span class="hljs-keyword">const</span> <span class="hljs-attr">p</span>: <span class="hljs-title class_">Person</span> = { <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;Ada&quot;</span>, <span class="hljs-attr">age</span>: <span class="hljs-number">36</span> };
+</code></pre>
+<p>p 是一个同时满足两种结构要求的对象。交叉类型本身没有创建两个对象，也没有执行字段合并；若要在运行时合并对象，仍需对象展开等实际操作。</p>
+<h3>引入、消除与共同能力</h3>
+<pre class="hljs" data-lang="text"><code>Γ ⊢ e : A       Γ ⊢ e : B
+-------------------------
+       Γ ⊢ e : A &amp; B
+
+Γ ⊢ e : A &amp; B              Γ ⊢ e : A &amp; B
+-------------              -------------
+Γ ⊢ e : A                  Γ ⊢ e : B
+</code></pre>
+<p>引入的两个前提针对同一个 e；消除把这个值按 A 或 B 使用，不像二元组投影那样取出不同分量。子类型方向与联合对偶：</p>
+<pre class="hljs" data-lang="text"><code>A &amp; B ≤ A，A &amp; B ≤ B
+C ≤ A &amp; B  当且仅当  C ≤ A 且 C ≤ B
+</code></pre>
+<p>交叉是最大下界（meet）。要求越多，符合条件的值越少，但能依赖的能力越多。Java 的 <code>&lt;T extends Serializable &amp; Comparable&lt;T&gt;&gt;</code> 是多重能力上界；不意味着 Java 在任意类型位置都允许自由书写交叉类型。</p>
+<p>TypeScript 中 <code>string &amp; number</code> 没有普通值，归约为 never；对象类型则可能同时满足两组字段要求。若同名字段分别要求 string 和 number，该字段就必须同时满足不相容的要求，不能把“交叉”理解为后者覆盖前者。</p>
+<p>函数类型的交叉可以描述重载契约，例如 <code>((x: string) =&gt; string) &amp; ((x: number) =&gt; number)</code> 要求同一个函数满足两种调用关系。它比 <code>(string | number) -&gt; (string | number)</code> 保留了更多输入输出关联；普通联合签名不能单凭参数类型保证返回的是对应成员。</p>
+<h2>联合／交叉与和／积：范围和数据结构</h2>
+<table>
+<thead>
+<tr>
+<th>类型构造</th>
+<th>一个值表达什么</th>
+<th>构造与使用</th>
+<th>适合的需求</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>联合（union）</td>
+<td>属于 A 或 B</td>
+<td>原值进入；用共同操作或守卫收窄</td>
+<td>多形态参数、可空值</td>
+</tr>
+<tr>
+<td>交叉（intersection）</td>
+<td>同时满足 A、B</td>
+<td>同一值满足两组要求；可按任一类型使用</td>
+<td>能力约束、结构组合、重载</td>
+</tr>
+<tr>
+<td>和 <code>A + B</code></td>
+<td>选择一个带标签的分支</td>
+<td>left／right 引入；按标签 case</td>
+<td>需要保留分支身份的数据</td>
+</tr>
+<tr>
+<td>积 <code>A × B</code></td>
+<td>包含两个分量</td>
+<td>二元组引入；fst／snd 投影</td>
+<td>数据聚合</td>
+</tr>
+</tbody>
+</table>
+<p>联合不自动增加来源标签：<code>Bool | Bool = Bool</code>，仍只有 true、false；和类型 <code>Bool + Bool</code> 有四个带标签的值。类似地，<code>A &amp; A = A</code>，而积 <code>A × A</code> 携带两个可独立选择的分量。不能因为都能读成“或／且”，就把两对类型构造互换。</p>
+<p>集合语义下，联合与交叉满足幂等、交换、结合和分配律，例如：</p>
+<pre class="hljs" data-lang="text"><code>A | A = A                         A &amp; A = A
+A | B = B | A                     A &amp; B = B &amp; A
+A &amp; (B | C) = (A &amp; B) | (A &amp; C)
+A | ⊥ = A                         A &amp; ⊤ = A
+</code></pre>
+<p>⊥ 的值集合为空，⊤ 覆盖所有值；TypeScript 中通常用 never、unknown 对应这一直觉，any 会绕开检查，不适合当作普通顶类型参与推理。有限集合还满足 <code>|A ∪ B| = |A| + |B| - |A ∩ B|</code>，不能一般地把联合成员数直接相加。</p>
+<p>积／和也有代数性质，但常以同构表达：<code>A × B ≅ B × A</code> 通过交换分量实现，<code>A + B ≅ B + A</code> 通过交换分支标签实现；具体值的表示并不因此相同。积、和是否采用名义类型取决于语言，不能从有构造器就推出“所有积／和都必然是名义类型”。</p>
+<h3>运行时表示与性能边界</h3>
+<p>TypeScript 的联合／交叉类型标注会被擦除，不因写了类型就新增包装对象或类型表；源程序里的 <code>typeof</code>、判别字段、switch 和对象构造仍会执行。擦除类型标注的成本与执行这些操作的成本要分开。</p>
+<p>和类型常见实现是标签与载荷，载荷区域容纳当前分支，并考虑对齐；也可能装箱或优化掉显式标签。例如 Rust 对若干指定类型保证 <code>Option&lt;T&gt;</code> 与 T 同大小，包括满足文档条件的引用类型，利用空值位模式表示 None。<a href="https://doc.rust-lang.org/std/option/#representation">Rust 的表示保证</a>说明，有标签的语义不必要求额外堆分配或额外标签字节。</p>
+<p>交叉类型也不必对应多张运行时方法表：TypeScript 会擦除，其他语言的接口、trait、字典或多重继承有各自实现。switch 是否生成跳转表、接口调用是否被内联、装箱是否发生，都依赖实现与程序；不能仅凭类型写法给出固定的速度排序。穷尽性检查、类型推断和某些优化可在擦除前完成，擦除不等于丢失全部编译期优化能力。</p>
+<aside class="callout callout-warning" data-callout="warning"><p class="callout-head"><span class="callout-severity">warning</span><span class="callout-title">: 05 材料的适用边界</span></p><p class="callout-source"><span aria-hidden="true">--&gt;</span> 类型系统.md:356</p><div class="callout-body">
+<p>第 21–23 页把交并类型概括为“无主类型”，并把积／和概括为必然名义化。这些说法过宽：主类型或主类型指派性质、可判定性都取决于具体规则与一般化关系；一些交类型系统具有 principal typings，不能与 HM 中仅靠量化变量实例化的主类型概念直接混同。相关例子见<a href="https://arxiv.org/abs/2603.04018">交类型的 principal typing 研究</a>。第 25–29 页的布局与分派描述应视为实现例子和可能的优化，不能作为所有语言的性能保证。</p>
+</div></aside>
+<h2>Hindley–Milner：从类型检查到类型推断</h2>
+<p>类型检查验证表达式是否符合给定的类型；类型推断依据表达式的结构、变量的使用方式和已知运算的类型，求出表达式应具有的类型。两者都可以在运行前进行，不需要执行函数。</p>
+<pre class="hljs" data-lang="text"><code>类型检查：程序 + 给定类型 → 验证是否符合规则
+类型推断：程序 + 已知类型规则 → 求出类型，或发现约束冲突
+</code></pre>
+<p>例如，已声明 <code>f : Int -&gt; Int</code>，函数体为 <code>x + 1</code>，检查器验证参数 x 和返回表达式都符合声明。省去声明后，写成 <code>f x = x + 1</code>，推断器也能求出类型：本课件的简化语言规定加法只接受两个 Int，并返回 Int，因此 x 必须是 Int，函数体也是 Int，得到 <code>f : Int -&gt; Int</code>。</p>
+<p>类型推断省去的是程序员的部分类型标注，并没有省去类型规则或所有已知类型信息。下面的整数、列表示例采用不含重载的简化 Haskell 子集；形式化 HM 核心则以变量、常量、λ 抽象、应用和非递归 let 为研究对象。</p>
+<p>Hindley–Milner 类型推断的目标是求出最一般的类型：只施加程序所必需的限制。后续通过“建立语法树 → 分配类型变量 → 生成约束 → 合一求解 → 得到声明类型”展开；无法满足的类型约束意味着程序在这组规则下存在类型错误。</p>
+<h3>单态类型、类型方案与自由类型变量</h3>
+<p>HM 将推断中的单态类型 τ 与可复用定义的类型方案 σ 分开：</p>
+<pre class="hljs" data-lang="text"><code>e ::= x | c | λx. e | e1 e2 | let x = e1 in e2
+τ ::= α | Int | Bool | τ -&gt; τ
+σ ::= ∀α1 ... αn. τ                 n 可以为 0
+</code></pre>
+<p>这里“单态”指不含全称量词，不是完全没有类型变量。<code>α -&gt; α</code> 含待确定的变量，但仍是 τ；<code>∀α. α -&gt; α</code> 才是可各次实例化的方案。量词位于最外层，<code>(∀α. α -&gt; α) -&gt; Int</code> 这样的多态参数类型不属于基本 HM。列表、积和递归示例是相应扩展，不是这段核心语法自带的构造。</p>
+<p>自由类型变量 ftv 是没有被 ∀ 绑定的类型变量，与表达式中的自由变量不同：</p>
+<pre class="hljs" data-lang="text"><code>ftv(α) = {α}                       ftv(Int) = ftv(Bool) = ∅
+ftv(τ1 -&gt; τ2) = ftv(τ1) ∪ ftv(τ2)
+ftv(∀α. σ) = ftv(σ) \ {α}
+ftv(Γ) = 所有 Γ(x) 的自由类型变量的并集
+
+ftv(∀α. α -&gt; β) = {β}
+</code></pre>
+<p>HM 环境 Γ 将表达式变量映射到类型方案；λ 参数以量化零个变量的单态方案存入。类型替换 S 将自由类型变量映射到类型，按结构作用：<code>S(τ1 -&gt; τ2) = Sτ1 -&gt; Sτ2</code>。作用到方案时不替换受 ∀ 绑定的变量，并在必要时改名避免捕获。</p>
+<p>实例化另有明确动作：取 <code>∀α. α -&gt; α</code> 的一个实例时，去掉量词并把绑定的 α 一致换为某个类型。算法通常先换成全新变量 β，随后由使用约束决定 β；不同使用换不同的新变量，同一次使用的相同变量仍须一致。</p>
+<h3>let 泛化：只量化不受环境约束的变量</h3>
+<p>泛化（generalization，也称推广）把一个推断结果变成可复用方案：</p>
+<pre class="hljs" data-lang="text"><code>gen(Γ, τ) = ∀α1 ... αn. τ
+其中 {α1, ..., αn} = ftv(τ) \ ftv(Γ)
+</code></pre>
+<p>例如空环境下 <code>gen(∅, α -&gt; β) = ∀α β. α -&gt; β</code>；若 <code>Γ = {y : β}</code>，就只能得到 <code>∀α. α -&gt; β</code>。β 与外部 y 的类型相连，不是每次使用都可独立选择的变量。</p>
+<pre class="hljs" data-lang="text"><code>let id = λx. x in (id 1, id true)     : Int × Bool
+λid. (id 1, id true)                 : 在基本 HM 中不可类型化
+</code></pre>
+<p>前者先将 id 泛化为 <code>∀α. α -&gt; α</code>，两次使用各自实例化；后者的 λ 参数 id 只有一个共享的单态类型，不能同时要求其输入为 Int 与 Bool。即使 let 内没有量化变量，绑定仍合法，只是没有因此获得多态。</p>
+<p>反过来，<code>λy. let f = λx. y in (f 1, f true)</code> 是可类型化的：若 y 的类型为 β，则 f 的方案为 <code>∀α. α -&gt; β</code>。两次调用的参数可以不同，结果必须都是 β，整个表达式具有 <code>β -&gt; (β × β)</code> 类型。禁止量化 β，并不禁止量化与环境无关的参数类型 α。</p>
+<p>泛化条件保护了与外部值的联系。例如 <code>(λy. let z = y in z 0) 1</code> 应被拒绝：z 与 y 共享类型，<code>z 0</code> 要求 y 是函数，外层却传入 Int。若错误地把 z 泛化成 <code>∀α. α</code>，就可能把实际整数 1 当函数调用。</p>
+<h3>说明性规则：定义什么推导合法</h3>
+<p>07 材料用六条规则定义判断。以下环境扩展会遮蔽同名旧绑定；Abs 与 App 中的 τ 均为单态类型，Inst 只实例化方案的量化变量，保留环境中的类型联系。</p>
+<pre class="hljs" data-lang="text"><code>x : σ ∈ Γ
+------------- Var
+Γ ⊢ x : σ
+
+Γ, x : τ1 ⊢ e : τ2
+------------------------- Abs
+Γ ⊢ λx. e : τ1 -&gt; τ2
+
+Γ ⊢ e1 : τ2 -&gt; τ       Γ ⊢ e2 : τ2
+---------------------------------- App
+          Γ ⊢ e1 e2 : τ
+
+Γ ⊢ e1 : σ       Γ, x : σ ⊢ e2 : τ
+---------------------------------- Let
+      Γ ⊢ let x = e1 in e2 : τ
+
+Γ ⊢ e : σ       α ∉ ftv(Γ)
+--------------------------- Gen
+Γ ⊢ e : ∀α. σ
+
+Γ ⊢ e : σ       σ′ 是 σ 的合法实例
+-------------------------------- Inst
+             Γ ⊢ e : σ′
+</code></pre>
+<p>恒等函数的最小推导为：</p>
+<pre class="hljs" data-lang="text"><code>   x : α ∈ {x : α}
+--------------------- Var
+   x : α ⊢ x : α
+--------------------- Abs
+  ∅ ⊢ λx. x : α -&gt; α       α ∉ ftv(∅)
+-------------------------------------- Gen
+        ∅ ⊢ λx. x : ∀α. α -&gt; α
+</code></pre>
+<p>说明性规则允许在适当位置使用 Gen／Inst；算法 W 将泛化集中在 let、实例化集中在变量使用处，顶层输出也可再泛化。因此“只有 let 多态”是对绑定方式和算法策略的概括，不是说声明式 Gen 规则只能紧跟 Let。</p>
+<h3>函数调用生成的约束</h3>
+<p>类型变量表示尚待确定的类型，不是运行时的程序变量。对于调用 <code>f x</code>，若 f、x、整个调用的类型分别为 α、β、γ，则生成约束：</p>
+<pre class="hljs" data-lang="text"><code>α = β -&gt; γ
+</code></pre>
+<p>f 必须具有函数类型，参数类型必须等于实参 x 的类型，返回类型就是整个调用表达式的类型。例如 <code>f : Int -&gt; Bool</code> 时，约束 <code>Int -&gt; Bool = β -&gt; γ</code> 要求 <code>β = Int</code>、<code>γ = Bool</code>。若实参已知为 Bool，则会产生 <code>Int = Bool</code> 的冲突。</p>
+<h3>函数定义生成的约束</h3>
+<p>对于定义 <code>f x = e</code>（或匿名函数 <code>λx. e</code>），若参数 x 的类型为 β、函数体 e 的类型为 γ，则函数类型为 <code>β -&gt; γ</code>。若用 α 表示 f 的类型，也生成 <code>α = β -&gt; γ</code>。</p>
+<p>调用规则连接函数、实参与调用结果；定义规则连接函数、形参与函数体。它们形式相同，但对应不同的语法结构。检查函数体时，参数的各次引用使用其绑定的同一个类型变量。</p>
+<p>例如 <code>f x = x + 1</code>，先设 <code>x : β</code>；整数加法要求 <code>β = Int</code>，函数体类型为 Int，因此 <code>f : Int -&gt; Int</code>。而 <code>f x = true</code> 只确定函数体为 Bool，未使用的参数不受额外限制，得到 <code>f : β -&gt; Bool</code>；不能仅因结果为 Bool 就把参数也限定为 Bool。</p>
+<h3>将中缀运算拆成函数调用</h3>
+<p>课件将 <code>f x = 2 + x</code> 的函数体解析为 <code>((+) 2) x</code>。<code>(+)</code> 是加法函数，先接受 2，返回一个等待第二个整数的函数，再接受 x。这里的类型是柯里化形式：</p>
+<pre class="hljs" data-lang="text"><code>(+) : Int -&gt; (Int -&gt; Int)
+(+) 2 : Int -&gt; Int
+((+) 2) x : Int       要求 x : Int
+f : Int -&gt; Int
+</code></pre>
+<p>函数类型箭头向右结合：<code>A -&gt; B -&gt; C</code> 表示 <code>A -&gt; (B -&gt; C)</code>；函数应用向左结合：<code>h a b</code> 表示 <code>(h a) b</code>。前者的第一个调用返回函数，后者再调用该返回函数。它不同于接受一个二元组参数的 <code>(A × B) -&gt; C</code>。</p>
+<p>这样把运算拆成两个应用节点后，每个节点都能使用同一条调用约束“函数类型 = 实参类型 -&gt; 调用结果类型”，无需为中缀加法另造一套调用规则。</p>
+<h3>合一：求解类型约束</h3>
+<p>合一（unification）寻找对类型变量的统一替换，使所有类型等式同时成立。同一个类型变量在所有约束中必须一致替换，不能在不同位置各选一种类型。</p>
+<p>函数类型的等式按结构拆解：<code>A -&gt; B = C -&gt; D</code> 要求 <code>A = C</code> 且 <code>B = D</code>。变量可以替换为类型，例如 <code>α = Int</code>；不同基本类型如 <code>Int = Bool</code> 无法合一。在这里，合一不做运行时类型转换。</p>
+<p>以 <code>f x = ((+) 2) x</code> 为例，用 α 表示 x 的类型、β 表示第一次调用 <code>(+) 2</code> 的类型、γ 表示函数体的类型、δ 表示 f 的类型：</p>
+<pre class="hljs" data-lang="text"><code>Int -&gt; (Int -&gt; Int) = Int -&gt; β     第一次调用
+β = α -&gt; γ                       第二次调用
+δ = α -&gt; γ                       函数定义
+
+由第一式：β = Int -&gt; Int
+代入第二式：Int -&gt; Int = α -&gt; γ
+按结构拆解：α = Int，γ = Int
+代入第三式：δ = Int -&gt; Int
+</code></pre>
+<p>这些约束来自已知常量／运算的类型和表达式的语法结构。求解得到 <code>f : Int -&gt; Int</code>，不需要计算 <code>2 + x</code>。若同一个变量又被要求为 Bool，则约束冲突，程序在这组规则下存在类型错误。</p>
+<p>合一不仅要找一个解，还要保留不必要收窄的自由度。最一般合一子 U 满足：任何其他合一解 S 都可写成 <code>S = R ∘ U</code>，即在 U 的基础上继续替换即可得到。复合从右向左施加：<code>(S2 ∘ S1)τ = S2(S1τ)</code>；不能一般地当作两张替换表的简单并集。</p>
+<p>合一类型变量时还必须做发生检查（occurs check）：除 <code>α = α</code> 直接成功外，若 α 出现在待替换类型内部，就不能令 <code>α ↦ τ</code>。</p>
+<pre class="hljs" data-lang="text"><code>λx. x x
+设 x : α，应用结果 : β
+函数位置要求：α = α -&gt; β
+α 出现在右侧，无法用有限 HM 类型满足，因此拒绝
+</code></pre>
+<p>这与 <code>let id = λx. x in id id</code> 不同：两处 let 绑定的 id 可独立实例化为 <code>a -&gt; a</code> 与 <code>b -&gt; b</code>，约束只需 <code>a = b -&gt; b</code>，结果为 <code>b -&gt; b</code>，没有自身包含。发生检查针对有限类型的核心系统；若语言另行引入递归类型，需要重新规定规则。</p>
+<h3>算法 W：把规则变成确定的推断步骤</h3>
+<p><code>W(Γ, e) = (S, τ)</code> 同时返回类型 τ 与替换 S，保证 <code>SΓ ⊢ e : τ</code>。推断可能确定了环境里原本未知的类型，S 要把这些发现带给后续表达式；只返回 τ 会丢失共享约束。</p>
+<p>例如 <code>Γ = {f : α}</code> 下推断 <code>f 1</code>，只会得到 <code>S = [α ↦ Int -&gt; β]</code>、结果 β，不能无依据地把返回类型也定为 Int。</p>
+<p>下面的 Id 表示恒等替换；fresh 每次取全新变量；<code>Γ[x ↦ σ]</code> 表示添加或遮蔽一个绑定。常量按预先规定的类型处理，列表、积、递归需要额外分支。</p>
+<pre class="hljs" data-lang="text"><code>W(Γ, x):
+  ∀α1 ... αn. τ = Γ(x)
+  β1, ..., βn = fresh()
+  return (Id, [αi ↦ βi]τ)
+
+W(Γ, λx. e):
+  β = fresh()
+  (S1, τ1) = W(Γ[x ↦ β], e)
+  return (S1, S1β -&gt; τ1)
+
+W(Γ, e1 e2):
+  (S1, τ1) = W(Γ, e1)
+  (S2, τ2) = W(S1Γ, e2)
+  β = fresh()
+  U = unify(S2τ1, τ2 -&gt; β)
+  return (U ∘ S2 ∘ S1, Uβ)
+
+W(Γ, let x = e1 in e2):
+  (S1, τ1) = W(Γ, e1)
+  σ = gen(S1Γ, τ1)
+  (S2, τ2) = W((S1Γ)[x ↦ σ], e2)
+  return (S2 ∘ S1, τ2)
+</code></pre>
+<p>Var 把量化变量换新，λ 参数没有量化变量因而仍共享原类型；Abs 必须用 S1 更新参数 β；App 在推实参前更新环境，并在合一前用 S2 更新函数类型；Let 必须对更新后的 S1Γ 做泛化。这四处共同保证先前得到的约束不会被遗忘。</p>
+<h3>手工跟踪：应用器与真正的函数组合</h3>
+<p>对 <code>λf. λx. f x</code>，设 f、x 与调用结果分别为 a、b、c，共产生三个新变量。从最内层向外返回：</p>
+<table>
+<thead>
+<tr>
+<th>子表达式／环境</th>
+<th>关键动作</th>
+<th>返回类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>f x</code>，环境 <code>{f : a, x : b}</code></td>
+<td>合一 <code>a = b -&gt; c</code>，得到 <code>U = [a ↦ b -&gt; c]</code></td>
+<td>c</td>
+</tr>
+<tr>
+<td><code>λx. f x</code>，环境 <code>{f : a}</code></td>
+<td>更新参数 b，组装函数类型</td>
+<td><code>b -&gt; c</code></td>
+</tr>
+<tr>
+<td><code>λf. λx. f x</code>，空环境</td>
+<td>用 U 更新 a，再组装外层</td>
+<td><code>(b -&gt; c) -&gt; b -&gt; c</code></td>
+</tr>
+</tbody>
+</table>
+<p>两处变量查找返回 Id，三个上表步骤都带出 U；在空环境将剩余 b、c 泛化，主类型方案为 <code>∀b c. (b -&gt; c) -&gt; b -&gt; c</code>。这是应用器（apply）：接受一个函数及其实参，然后调用它。</p>
+<p>真正的组合是 <code>compose = λf. λg. λx. f (g x)</code>。若 x 的类型为 A，<code>g x</code> 为 B，<code>f (g x)</code> 为 C，则：</p>
+<pre class="hljs" data-lang="text"><code>g : A -&gt; B，f : B -&gt; C
+compose : ∀A B C. (B -&gt; C) -&gt; (A -&gt; B) -&gt; A -&gt; C
+</code></pre>
+<p>中间类型 B 连接 g 的输出与 f 的输入，而不是要求两个函数的输入输出全部相同。</p>
+<aside class="callout callout-warning" data-callout="warning"><p class="callout-head"><span class="callout-severity">warning</span><span class="callout-title">: 07 材料中需修正的例子</span></p><p class="callout-source"><span aria-hidden="true">--&gt;</span> 类型系统.md:590</p><div class="callout-body">
+<p>第 18 页仅凭 <code>f 1</code> 就将未知 f 确定为 <code>Int -&gt; Int</code>，实际只能确定 <code>Int -&gt; β</code>。第 23 页的 <code>λy. let f = λx. y in (f 1, f true)</code> 合法，结果类型如前述；不能将不同参数类型误当成不同结果类型。第 25 页跟踪的是 apply，第 31 页展示的才是 compose，两者主类型不同。第 35 页同形应用器练习按 W 需要三个新变量，包括应用结果变量。</p>
+</div></aside>
+<h3>保留自由度：多态类型与实例化</h3>
+<p>考虑顶层定义 <code>f g = g 2</code>。先按课件的树为节点分配类型变量，再从节点生成约束：</p>
+<pre class="mermaid">flowchart TD
+    Def[&quot;Fun：函数定义&quot;] --&gt; F[&quot;函数名 f : t0&quot;]
+    Def --&gt; Param[&quot;形参绑定 g : t1&quot;]
+    Def --&gt; App[&quot;应用 g 2 : t4&quot;]
+    App --&gt; Use[&quot;变量引用 g : t1&quot;]
+    App --&gt; Lit[&quot;常量 2 : t3&quot;]
+    Use -.-&gt;|引用该绑定，共享 t1| Param
+</pre><p>实线表示语法结构，虚线表示变量引用对应的绑定；图不是程序执行顺序。形参绑定 g 和函数体中的 g 是两个语法位置，但共享 t1。应用节点的类型 t4 是调用结果类型，不能与函数 g 的类型 t1 混淆。</p>
+<pre class="hljs" data-lang="text"><code>Fun 节点： t0 = t1 -&gt; t4       函数类型 = 形参类型 -&gt; 函数体类型
+应用节点： t1 = t3 -&gt; t4       被调用函数类型 = 实参类型 -&gt; 结果类型
+常量节点： t3 = Int
+
+代入：t1 = Int -&gt; t4
+再代入：t0 = (Int -&gt; t4) -&gt; t4
+</code></pre>
+<p>将剩余的 t4 改名为 α，就得到：</p>
+<pre class="hljs" data-lang="text"><code>f : (Int -&gt; α) -&gt; α
+</code></pre>
+<p>程序要求 g 接受 Int，但没有限定其返回类型；f 返回的就是 g 的调用结果，因此两处 α 必须一致，不能擅自选定为 Int 或 Bool。</p>
+<p>在基本 Hindley–Milner 系统中，推广可量化未被环境约束的类型变量。此例的顶层定义可写成类型方案 <code>f : ∀α. (Int -&gt; α) -&gt; α</code>，通常省略 <code>∀α</code>。它表示每次使用 f 时，可以用一个具体类型或新的类型变量一致替换该次实例中的 α。</p>
+<p>例如 <code>add : Int -&gt; Int</code> 时，<code>f add : Int</code>；<code>isEven : Int -&gt; Bool</code> 时，<code>f isEven : Bool</code>。不同使用可以分别实例化；同一次实例中相同的 α 始终代表同一类型。若传入 <code>h : Bool -&gt; Bool</code>，仍会因 g 必须接受 Int 而失败。</p>
+<p>多态保留的是程序允许的类型自由度，并不允许忽略已确定的约束，也不表示未知类型的值可接受任意操作。</p>
+<h3>同一个函数连续调用：约束如何连接</h3>
+<p>课件的 <code>f (g, x) = g (g x)</code> 接受一个二元组参数。g 是函数参数，在这次函数体推断中，两处 g 引用共享同一个类型 t1；不能为它们各自独立实例化。</p>
+<pre class="mermaid">flowchart TD
+    Def[&quot;定义 f : t0&quot;] --&gt; Pair[&quot;二元组形参 (g, x) : t3&quot;]
+    Pair --&gt; BindG[&quot;绑定 g : t1&quot;]
+    Pair --&gt; BindX[&quot;绑定 x : t2&quot;]
+    Def --&gt; Outer[&quot;外层应用 g (g x) : t8&quot;]
+    Outer --&gt; GOuter[&quot;g : t1&quot;]
+    Outer --&gt; Inner[&quot;内层应用 g x : t7&quot;]
+    Inner --&gt; GInner[&quot;g : t1&quot;]
+    Inner --&gt; X[&quot;x : t2&quot;]
+    GOuter -.-&gt; BindG
+    GInner -.-&gt; BindG
+    X -.-&gt; BindX
+</pre><p>实线表示语法结构，虚线表示引用的绑定。内层调用的结果 t7 同时是外层调用的实参类型，这使两次调用的约束相连。</p>
+<pre class="hljs" data-lang="text"><code>内层应用：t1 = t2 -&gt; t7
+外层应用：t1 = t7 -&gt; t8
+形参结构：t3 = t1 × t2
+函数定义：t0 = t3 -&gt; t8
+
+两处 g 共享 t1，所以 t2 -&gt; t7 = t7 -&gt; t8
+按结构合一：t2 = t7，t7 = t8
+令共同类型为 α，则 g : α -&gt; α，x : α
+因此 f : ((α -&gt; α) × α) -&gt; α
+</code></pre>
+<p>课件写作 <code>(α -&gt; α, α) -&gt; α</code>，逗号表示二元组类型；g 的输入输出相同来自两次调用的结构约束，不是所有函数都必须如此。</p>
+<h3>列表模式带来的约束</h3>
+<p>课件用 <code>length [] = 0</code> 与 <code>length (x:rest) = 1 + (length rest)</code> 引入列表。<code>[α]</code> 表示元素类型为 α 的列表；<code>[]</code> 是空列表；<code>x:rest</code> 表示一个表头 x 加上列表尾部 rest。在本课语言中，列表元素具有同一种类型。</p>
+<pre class="mermaid">flowchart TD
+    Cons[&quot;列表模式 x:rest : γ&quot;] --&gt; Head[&quot;表头 x : α&quot;]
+    Cons --&gt; Tail[&quot;尾部 rest : β&quot;]
+</pre><p>列表模式节点给出 <code>γ = [α]</code>、<code>β = [α]</code>：表头是元素，尾部与整个列表都是该元素类型的列表。rest 不必非空，例如 <code>x:[]</code> 只含一个元素；<code>:</code> 在这里是列表构造／匹配语法，不是类型标注。</p>
+<p>在表达式中，<code>:</code> 是 cons（构造列表）的运算：左侧是一个元素，右侧是一个列表，把元素放到列表最前面。例如 <code>1 : [2, 3] = [1, 2, 3]</code>，<code>1 : [] = [1]</code>。<code>1 : copy [2]</code> 就是 <code>1 : (copy [2])</code>，待右侧得到 <code>[2]</code> 后构造 <code>[1, 2]</code>。</p>
+<p><code>:</code> 的类型为 <code>A -&gt; [A] -&gt; [A]</code>，而本课 append 的类型为 <code>([A] × [A]) -&gt; [A]</code>：前者连接一个元素与列表，后者连接两个列表。例如 <code>append ([1], [2, 3])</code> 也得到 <code>[1, 2, 3]</code>，但参数结构不同。在定义左侧，<code>x:xs</code> 是模式，拆出表头与尾部；右侧的 <code>x:xs</code> 是构造表达式，将它们组成列表。</p>
+<p>空列表没有元素来限定 α，因此其类型可以是 <code>[α]</code>，由上下文进一步约束；它既不是 Unit，也不必是 <code>[Int]</code>。</p>
+<p>列表约束可以和函数体约束连接。例如 <code>first (x:rest) = x</code> 的输入类型为 <code>[α]</code>，结果类型为 α，因此 <code>first : [α] -&gt; α</code>。此定义未处理空列表：能够推断类型，不代表模式覆盖完整或调用一定成功。</p>
+<h3>递归调用共享定义的类型：length</h3>
+<p>课件定义 <code>length [] = 0</code>、<code>length (x:rest) = 1 + (length rest)</code>。在基本 Hindley–Milner 推断中，检查递归函数体时先为 length 假设一个待求解的类型 δ，递归引用共享这个类型；推断结束后再推广可量化的变量。</p>
+<p>非空列表分支的函数体先展开为 <code>((+) 1) (length rest)</code>：</p>
+<pre class="mermaid">flowchart TD
+    Def[&quot;定义 length : δ&quot;] --&gt; Pattern[&quot;形参 x:rest : [α]&quot;]
+    Pattern --&gt; Head[&quot;x : α&quot;]
+    Pattern --&gt; Tail[&quot;rest : [α]&quot;]
+    Def --&gt; Body[&quot;外层应用：函数体 : γ&quot;]
+    Body --&gt; Partial[&quot;应用 (+) 1 : κ&quot;]
+    Partial --&gt; Plus[&quot;(+) : Int → (Int → Int)&quot;]
+    Partial --&gt; One[&quot;1 : Int&quot;]
+    Body --&gt; Rec[&quot;递归应用 length rest : β&quot;]
+    Rec --&gt; Ref[&quot;length : δ&quot;]
+    Rec --&gt; Arg[&quot;rest : [α]&quot;]
+    Ref -.-&gt;|共享递归定义类型| Def
+    Arg -.-&gt; Tail
+</pre><p>各节点产生的约束为：</p>
+<pre class="hljs" data-lang="text"><code>函数定义：δ = [α] -&gt; γ
+递归应用：δ = [α] -&gt; β
+应用 (+) 1：Int -&gt; (Int -&gt; Int) = Int -&gt; κ
+外层应用：κ = β -&gt; γ
+
+先得 κ = Int -&gt; Int
+所以 β = Int，γ = Int
+代入：δ = [α] -&gt; Int
+</code></pre>
+<p>加法使用的是递归调用的结果 β，并未使用表头 x，因此不会要求 α = Int。Bool 列表、Int 列表等都能作为 length 的输入。</p>
+<p>空列表分支 <code>length [] = 0</code> 也给出列表输入、Int 输出；两个分支需具有一致的函数类型，最终 <code>length : [α] -&gt; Int</code>。这些是类型约束，不需要实际展开递归调用或计算长度，也不能据此单独证明递归终止。</p>
+<p>对照 <code>sum [] = 0</code>、<code>sum (x:rest) = x + sum rest</code>：这里加法直接使用了表头 x，因此元素类型也必须为 Int。将函数体展开为 <code>((+) x) (sum rest)</code>，设 x 的类型为 α、递归结果为 β、函数体为 γ、sum 为 δ、部分应用 <code>(+) x</code> 为 κ：</p>
+<pre class="hljs" data-lang="text"><code>函数定义：δ = [α] -&gt; γ
+递归调用：δ = [α] -&gt; β
+第一次加法调用：Int -&gt; (Int -&gt; Int) = α -&gt; κ
+第二次加法调用：κ = β -&gt; γ
+
+由第一次调用：α = Int，κ = Int -&gt; Int
+由第二次调用：β = Int，γ = Int
+因此 sum : [Int] -&gt; Int
+</code></pre>
+<p>不能将 <code>(+) x</code> 的类型直接写成 <code>α -&gt; Int</code>：α 是已传入实参 x 的类型，部分应用的类型应从加法函数类型及第一次调用约束中求出。length 只对计数结果做加法，sum 对列表元素做加法，这解释了两者输入元素类型的差别。</p>
+<h3>多个模式分支必须合并为同一个函数类型</h3>
+<p>课件的 append 接收一个包含两个列表的二元组：</p>
+<pre class="hljs" data-lang="text"><code>append ([], r) = r
+append (x:xs, r) = x : append (xs, r)
+</code></pre>
+<p>先收集各分支带来的类型形状，再要求同一个函数的所有分支类型一致。第一分支中，空列表类型为 <code>[a]</code>，r 的类型暂记 b，结果也是 b。第二分支中，x 的类型为 c、xs 为 <code>[c]</code>、r 暂记 d；由于返回表达式以 x 为表头，递归结果和整个结果都必须为 <code>[c]</code>。</p>
+<pre class="mermaid">flowchart TD
+    Def[&quot;append 的共同类型 δ&quot;] --&gt; First[&quot;分支一约束：δ = ([a] × b) → b&quot;]
+    Def --&gt; Second[&quot;分支二约束：δ = ([c] × d) → [c]&quot;]
+    First --&gt; Merge[&quot;合一：a = c；b = d；b = [c]&quot;]
+    Second --&gt; Merge
+    Merge --&gt; Result[&quot;δ = ([a] × [a]) → [a]&quot;]
+</pre><p>两种输入形状属于同一个函数，不能各自保持互不相容的类型。这些分支类型形状是合并前的约束，不是忽略其余约束后独立成立的完整多态定义；递归调用也必须共享 append 的待求解类型。</p>
+<p>例如两个 Int 列表或两个 Bool 列表都满足规则；一个 Int 列表与一个 Bool 列表不能合并成此语言中的同质列表。两个空列表的元素类型尚未确定，可由其他输入或使用上下文限定。</p>
+<h3>最一般类型：其他合法类型都可由它实例化</h3>
+<p>主类型（principal type），也称最一般类型，保留程序允许的类型自由度；更具体的合法类型都能通过一致替换其中可量化的类型变量得到。它不是选择一个具体类型作为默认值，也不是允许忽略程序约束。</p>
+<p>课件定义：</p>
+<pre class="hljs" data-lang="text"><code>map (f, []) = []
+map (f, x:xs) = f x : map (f, xs)
+</code></pre>
+<p>设 x 的类型为 A，f x 的类型为 B，则 f 必须具有 <code>A -&gt; B</code> 类型，xs 为 <code>[A]</code>，递归结果为 <code>[B]</code>，整个结果也为 <code>[B]</code>。空列表分支与这些约束一致。</p>
+<pre class="mermaid">flowchart TD
+    Input[&quot;二元组输入：(f, 输入列表)&quot;] --&gt; F[&quot;f : A → B&quot;]
+    Input --&gt; List[&quot;输入列表 : [A]&quot;]
+    Body[&quot;结果构造 f x : map (f, xs) : [B]&quot;] --&gt; Head[&quot;调用 f x : B&quot;]
+    Body --&gt; Tail[&quot;递归调用 map (f, xs) : [B]&quot;]
+</pre><p>因此 <code>map : ((A -&gt; B) × [A]) -&gt; [B]</code>。A 与 B 没有被要求相同，也没有被限定为某一种基本类型。</p>
+<p>例如替换 <code>A = Bool</code>、<code>B = Int</code>，得到 <code>((Bool -&gt; Int) × [Bool]) -&gt; [Int]</code>；只替换 <code>B = Int</code>，则保留 A 的自由度，得到 <code>((A -&gt; Int) × [A]) -&gt; [Int]</code>。这些都是主类型的实例，但限制比主类型更多。</p>
+<p>判断某个类型是否为实例，要检查所有位置的一致替换。例如 <code>((Int -&gt; Bool) × [Int]) -&gt; [Int]</code> 不是上述 map 类型的实例：f 的输出把 B 限定为 Bool，结果列表却把 B 限定为 Int。</p>
+<p>实例化时应按位置对齐：传入 <code>isEven : Int -&gt; Bool</code> 就令 <code>A -&gt; B = Int -&gt; Bool</code>，得到 <code>A = Int</code>、<code>B = Bool</code>；输入为 <code>[Int]</code>，输出为 <code>[Bool]</code>。A 是输入元素类型，B 是 f 返回的单个结果类型，不能把整个函数类型当作 A、整个列表类型当作 B。传入 <code>double : Int -&gt; Int</code> 则得到 <code>A = B = Int</code>，输出为 <code>[Int]</code>。</p>
+<h3>类型合法与程序意图：写错的 reverse</h3>
+<p>课件给出以下定义：</p>
+<pre class="hljs" data-lang="text"><code>reverse [] = []
+reverse (x:xs) = reverse xs
+</code></pre>
+<p>非空分支的表头 x 未出现在函数体中：</p>
+<pre class="mermaid">flowchart TD
+    Def[&quot;定义 reverse : δ&quot;] --&gt; Pattern[&quot;形参 x:xs : [A]&quot;]
+    Pattern --&gt; Head[&quot;x : A（函数体未使用）&quot;]
+    Pattern --&gt; Tail[&quot;xs : [A]&quot;]
+    Def --&gt; Body[&quot;函数体：递归调用 reverse xs : R&quot;]
+    Body --&gt; Ref[&quot;reverse : δ&quot;]
+    Body --&gt; Arg[&quot;xs : [A]&quot;]
+    Ref -.-&gt;|共享定义类型| Def
+    Arg -.-&gt; Tail
+</pre><p>函数定义与递归调用都给出 <code>δ = [A] -&gt; R</code>，没有建立输入元素 A 与结果元素之间的联系。空列表分支的结果为 <code>[B]</code>，因此 <code>R = [B]</code>，最终主类型是 <code>reverse : [A] -&gt; [B]</code>。</p>
+<p>运行在有限列表上时，该定义会逐个丢弃表头，最终返回空列表。例如 <code>[1, 2] → [2] → [] → 返回 []</code>；并未实现逆序。推断类型没有矛盾，但输入输出元素类型互不关联，与列表逆序通常预期的 <code>[A] -&gt; [A]</code> 不符，提示应检查实现。</p>
+<p>对照 <code>copy [] = []</code>、<code>copy (x:xs) = x : copy xs</code>：表头 x 的类型为 A，列表构造节点要求尾部 <code>copy xs</code> 为 <code>[A]</code>，整个结果也为 <code>[A]</code>，所以 <code>copy : [A] -&gt; [A]</code>。建立输入输出元素类型联系的是列表构造节点。此函数保留原顺序，仍不是逆序函数，说明同一个类型可以对应不同功能。</p>
+<p>类型检查失败表示程序违反当前类型系统的规则；推断类型与预期类型不同则不必然意味着检查失败。例如上述错误 reverse 的 <code>[A] -&gt; [B]</code> 可实例化为 <code>[A] -&gt; [A]</code>，但通过这一标注的检查仍不能保证元素保留或顺序正确。类型可以提示实现与意图的差异，功能正确性还需另行验证。</p>
+<h3>推断能力依赖语言规则</h3>
+<p>本课示例使用无重载的简化 Haskell 子集，给加法固定类型 <code>Int -&gt; Int -&gt; Int</code>。这使约束生成与合一可以直接确定加法操作数为 Int。</p>
+<p>课件最后指出，完整 Haskell 使用类型类支持重载，推断需要处理相应约束，不能直接套用本课的整数加法假设。类型变量保留的选择也须满足操作本身的要求，并非任何类型都能相加。</p>
+<p>基本 Hindley–Milner 系统中，递归函数体的各次递归引用共享待求解的函数类型；多态递归则允许递归使用不同类型实例，不属于这里演示的自动推断范围，一般需要适当的类型标注。语言功能越丰富，推断算法可能需要扩展或额外标注；不能把“本课不写类型也能推断”推广为“任意语言功能都不需要标注”。</p>
+<h3>可靠性、主类型与副作用边界</h3>
+<p>在上述 HM 核心中，W 的可靠性是“成功返回的结果可按规则推导”；完备性与主类型性质是“可类型化时能成功，并给出最一般的结果”，主类型方案在量化变量改名等意义下唯一。可类型化性可判定：W 在有限步内成功返回或报告失败，程序员不必预先标注每个类型。这些保证依赖语言、环境及类型规则，不是所有具有推断功能的语言都自动继承。<a href="https://steshaw.org/hm/milner-damas.pdf">Damas–Milner 原论文</a>针对其纯函数式核心证明了相关性质。</p>
+<p>推断算法的可靠性与语言的运行时类型安全还要区分：后者需要类型规则和求值语义之间的证明；即使良类型程序不因所建模的类型错误卡住，也不能推出终止、完整模式覆盖或业务正确性。</p>
+<p>若加入可变引用，任意 let 泛化可能破坏安全性。以 ML 风格伪代码为例，错误地让同一引用获得可反复实例化的方案 <code>∀α. Ref&lt;[α]&gt;</code>，就可能发生：</p>
+<pre class="hljs" data-lang="text"><code>let r = ref [] in
+  r := [1];
+  not (head (!r))
+</code></pre>
+<p>写入时把 r 当整数列表引用，读取时又把同一 r 当布尔列表引用，运行时就会把整数交给 not。通常的值限制只允许对非扩张的值表达式等安全情况泛化；OCaml 的宽松值限制还利用协变性允许更多情况，不能概括成“所有非值都永远单态”。<a href="https://ocaml.org/manual/5.4/polymorphism.html">OCaml 的多态限制说明</a>解释了弱类型变量与这两种限制。</p>
+<p>HM 的参数多态、联合／交叉类型的子类型和重载契约是不同机制。基本 HM 不包含一般子类型、重载或高秩多态；扩展系统需要另外处理约束并可能要求标注。现实语言采用 HM 式局部推断，也不意味着整门语言就是纯 HM。</p>
+<h3>推断效率：常见表现与最坏情况分开</h3>
+<p>课件指出，Hindley–Milner 类型推断的最坏情况可达到指数级，尤其要注意嵌套多态声明带来的类型增长；同时指出实际程序中的表现通常较好。这是对实践表现的概括，不是对所有程序的线性时间保证。</p>
+<p>程序文本短，不代表推断过程中涉及的类型结构也小。多态定义在不同使用位置被实例化，嵌套组合可能使推断所需处理的类型结构快速增长。不能仅凭每条局部约束容易处理，就断言整个推断过程总是线性。</p>
+<p>最坏情况复杂度描述算法面对困难输入的增长上界／难度，实际性能要结合程序与实现判断；既不能从常见程序推断很快得出“总是很快”，也不能从最坏情况指数级得出“所有程序都很慢”。</p>
+</div>
+    
+  </article>
+</div>
+</main>
+  <footer class="site-footer"><span>© 2026 nomad&#39;s blog</span><span class="footer-hint">press <kbd>`</kbd> to open the terminal</span></footer>
+  <section class="terminal" id="terminal" aria-label="Site terminal" hidden>
+    <button class="terminal-resize" id="terminal-resize" type="button" aria-label="Resize terminal" title="Drag to resize · arrow keys adjust height"></button>
+    <div class="terminal-heading">
+      <span id="terminal-title">nomad / terminal</span>
+      <button class="terminal-close" id="terminal-close" type="button" aria-label="Close terminal">×</button>
+    </div>
+    <div class="terminal-output" id="terminal-output" aria-live="polite"></div>
+    <form id="terminal-form" autocomplete="off">
+      <label class="terminal-prompt" for="terminal-input"><span class="prompt-user">nomad@home</span><span class="prompt-path" id="terminal-cwd">~</span></label>
+      <span class="terminal-field">
+        <span class="terminal-mirror" id="terminal-mirror" aria-hidden="true"></span>
+        <input id="terminal-input" name="command" aria-label="Digital garden command" autocapitalize="none" autocomplete="off" spellcheck="false">
+      </span>
+      <span class="terminal-rprompt" id="terminal-rprompt" aria-hidden="true"></span>
+    </form>
+    <p class="terminal-help">help for commands · Tab completes · → accepts a suggestion · Esc closes</p>
+  </section>
+</body>
+</html>
