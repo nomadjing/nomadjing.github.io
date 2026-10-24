@@ -1,5 +1,5 @@
-import { renderNoteHeatmap } from "./heatmap.js";
-import { resolvePath } from "./paths.js";
+import { renderNoteHeatmap } from "./heatmap.js?v=665390e630";
+import { resolvePath } from "./paths.js?v=665390e630";
 
 export const commandNames = [
   "help", "pwd", "ls", "cd", "up", "notes", "tags", "about", "tree", "open", "cat",
@@ -64,7 +64,7 @@ export function parseCommand(raw) {
 /**
  * `shell` supplies the terminal's state and effects:
  * { garden, cwd, setCwd, print, clear, navigate, close, parentUrl, history }.
- * @param {import("../types.js").Shell} shell
+ * @param {import("../types.js?v=665390e630").Shell} shell
  * @returns {(raw: string) => void}
  */
 export function createCommandRunner(shell) {

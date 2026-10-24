@@ -1,17 +1,17 @@
-import { baseName, cleanPath, depthFrom, isWithin, parentPath, resolvePath } from "./paths.js";
+import { baseName, cleanPath, depthFrom, isWithin, parentPath, resolvePath } from "./paths.js?v=665390e630";
 
 /**
  * The site as a file system, built from `/garden-index.json`. Notes live at
  * `/notes/<dir>/<note>`; tag directories hold links (`title -> /notes/...`)
  * instead of copies.
- * @param {import("../types.js").GardenIndex} index
+ * @param {import("../types.js?v=665390e630").GardenIndex} index
  */
 export function createGarden(index) {
   const notes = index.notes ?? [];
   const links = index.links ?? [];
   const directoryUrls = new Map((index.directories ?? []).map((directory) => [directory.path, directory.url]));
   const directories = [...directoryUrls.keys()];
-  const notePath = (/** @type {import("../types.js").GardenNote} */ note) => cleanPath(note.path);
+  const notePath = (/** @type {import("../types.js?v=665390e630").GardenNote} */ note) => cleanPath(note.path);
 
   /** @param {string} target */
   const canonicalDirectory = (target) =>

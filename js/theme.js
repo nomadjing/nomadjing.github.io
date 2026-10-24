@@ -2,7 +2,7 @@ const storageKey = "site-theme";
 
 /**
  * The inline script in <head> picks the first theme; this keeps it in sync afterwards.
- * @param {import("./types.js").PageContext} context
+ * @param {import("./types.js?v=665390e630").PageContext} context
  */
 export function initTheme({ document, window, local }) {
   const toggle = /** @type {HTMLButtonElement | null} */ (document.querySelector("#theme-toggle"));

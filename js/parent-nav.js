@@ -9,7 +9,7 @@ export function isTyping(event) {
 
 /**
  * Alt+↑ follows the header's `‹` link, mirroring the breadcrumb hierarchy.
- * @param {import("./types.js").PageContext} context
+ * @param {import("./types.js?v=665390e630").PageContext} context
  */
 export function initParentNavigation({ document, window }) {
   const parentLink = /** @type {HTMLAnchorElement | null} */ (document.querySelector("#parent-link"));

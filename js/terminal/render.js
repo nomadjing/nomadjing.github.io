@@ -1,5 +1,5 @@
-import { commandNames } from "./commands.js";
-import { resolvePath } from "./paths.js";
+import { commandNames } from "./commands.js?v=665390e630";
+import { resolvePath } from "./paths.js?v=665390e630";
 
 /** @param {string} text */
 const escape = (text) => text.replace(/[&<>"]/g, (char) => `&#${char.charCodeAt(0)};`);
@@ -38,7 +38,7 @@ const pathCommands = new Set(["cd", "ls", "tree", "open"]);
  * whether it exists, and arguments that resolve to a directory or note are underlined.
  * @param {string} value
  * @param {string} cwd
- * @param {import("../types.js").Garden | null} garden
+ * @param {import("../types.js?v=665390e630").Garden | null} garden
  * @param {string} [ghost] an autosuggestion, drawn faintly after the cursor
  */
 export function inputHtml(value, cwd, garden, ghost = "") {
@@ -63,7 +63,7 @@ export function inputHtml(value, cwd, garden, ghost = "") {
  * @param {string} value
  * @param {string[]} history
  * @param {string} cwd
- * @param {import("../types.js").Garden | null} garden
+ * @param {import("../types.js?v=665390e630").Garden | null} garden
  */
 export function suggestion(value, history, cwd, garden) {
   if (!value.trim()) return "";

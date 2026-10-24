@@ -4,7 +4,7 @@ const outlineIcon = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="fals
 /**
  * Article reading aids: a seekable progress line on the header rule, and an
  * outline that sits beside the article on wide screens or slides in on narrow ones.
- * @param {import("./types.js").PageContext} context
+ * @param {import("./types.js?v=665390e630").PageContext} context
  */
 export function initReading({ document, window, requestAnimationFrame }) {
   /** @type {HTMLElement | null} */
@@ -105,7 +105,7 @@ export function initReading({ document, window, requestAnimationFrame }) {
 
 /**
  * Builds the outline from h2/h3 headings; articles with fewer than three get none.
- * @param {Pick<import("./types.js").PageContext, "document" | "window" | "requestAnimationFrame"> & { article: HTMLElement, layout: HTMLElement | null }} options
+ * @param {Pick<import("./types.js?v=665390e630").PageContext, "document" | "window" | "requestAnimationFrame"> & { article: HTMLElement, layout: HTMLElement | null }} options
  */
 function createOutline({ document, window, requestAnimationFrame, article, layout }) {
   const headings = /** @type {HTMLElement[]} */ ([...article.querySelectorAll(".prose h2, .prose h3")]);
