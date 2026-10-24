@@ -1,0 +1,18 @@
+@media print {
+  :root, :root[data-theme="dark"] {
+    color-scheme: light;
+    --paper: #fff;
+    --ink: #111;
+    --muted: #444;
+    --soft-ink: #333;
+    --line: #bbb;
+    --link: #243d5c;
+    --accent: #526e63;
+    --code-bg: #f4f4f4;
+  }
+  body::before, .terminal, .reading-progress, .reading-outline, .site-nav-tools, .site-footer { display: none !important; }
+  .site-header { position: static !important; }
+  body.terminal-open { display: block; height: auto; overflow: visible; }
+  body.terminal-open main { overflow: visible; }
+  .has-reading-outline .note-layout { display: block; }
+}

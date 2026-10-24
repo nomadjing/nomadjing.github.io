@@ -1,0 +1,106 @@
+/* Design tokens: fonts, colors and sizes shared by every component. */
+
+/* JetBrains Mono (OFL), Latin subset; CJK falls back to the system mono/sans. */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin-700-normal.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: light;
+
+  /* Two voices: mono for everything a tool would print, serif for reading. */
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Noto Sans Mono CJK SC", monospace;
+  --font-serif: Georgia, "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+
+  /* Every page shares one left edge: the header's. */
+  --page-width: 1100px;
+  --page-gutter: 3rem;
+  --measure: 42rem;
+  --article-width: 46rem;
+  --outline-width: 15rem;
+
+  --paper: #f4efe5;
+  --ink: #292d29;
+  --muted: #6b7069;
+  --line: #ddd8cc;
+  --header-line: #c8c0b2;
+  --link: #375c4b;
+  --accent: #526e63;
+  --selection: #cbd8cb;
+  --broken: #8b3a32;
+  --code-bg: #ece8de;
+  --soft-ink: #5f594f;
+  --hover: rgba(82, 110, 99, .08);
+  --panel-shadow: rgba(36, 36, 36, .1);
+  --grid-dot: rgba(41, 45, 41, .14);
+
+  /* Diagnostic severities, used only by callouts and diagnostics. */
+  --sev-note: #4f6878;
+  --sev-help: #3f6d55;
+  --sev-warning: #9a6a16;
+  --sev-error: #9b3b30;
+
+  --terminal-edge: #796f60;
+  --terminal-bg: #eae3d6;
+  --terminal-rule: #c9bfaf;
+  --terminal-input-bg: #f5f0e7;
+  --terminal-shadow: rgba(36, 36, 36, .13);
+  --terminal-hint: #526b52;
+
+  --syntax-keyword: #7a4b6d;
+  --syntax-string: #4f6b2f;
+  --syntax-number: #9a5a1f;
+  --syntax-title: #2f5873;
+  --syntax-comment: #8a8a7f;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #1c211f;
+  --ink: #e9e5db;
+  --muted: #a3aba3;
+  --line: #3b453f;
+  --header-line: #58665c;
+  --link: #b6cbd0;
+  --accent: #acc6b5;
+  --selection: #3b554b;
+  --broken: #e2a29a;
+  --code-bg: #242c28;
+  --soft-ink: #c7c0b4;
+  --hover: rgba(172, 198, 181, .1);
+  --panel-shadow: rgba(0, 0, 0, .32);
+  --grid-dot: rgba(233, 229, 219, .1);
+
+  --sev-note: #9db4c4;
+  --sev-help: #9fcdb1;
+  --sev-warning: #e0b768;
+  --sev-error: #e59a90;
+
+  --terminal-edge: #6e8478;
+  --terminal-bg: #232b27;
+  --terminal-rule: #4d5f55;
+  --terminal-input-bg: #2a3530;
+  --terminal-shadow: rgba(0, 0, 0, .35);
+  --terminal-hint: #a7c9ad;
+
+  --syntax-keyword: #d6a8c8;
+  --syntax-string: #b5cf8e;
+  --syntax-number: #e3b07a;
+  --syntax-title: #9cc3dc;
+  --syntax-comment: #7f8a82;
+}
+
+@media (max-width: 620px) {
+  :root { --page-gutter: 2.5rem; }
+}

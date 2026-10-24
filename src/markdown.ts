@@ -2,15 +2,18 @@ import MarkdownIt from "markdown-it";
 import hljs from "highlight.js";
 import katex from "katex";
 import katexPlugin from "markdown-it-katex";
+import { calloutPlugin } from "./callout.js";
 import { createWikiResolver, wikiLinkPlugin } from "./wikilink.js";
 import type { Note } from "./types.js";
 
 export function createMarkdownRenderer(notes: Note[], resolveImage?: (target: string, note: Note) => string | undefined): MarkdownIt {
   const markdown: MarkdownIt = new MarkdownIt({ html: false, linkify: true, typographer: true, highlight(code, language): string {
-    if (language && hljs.getLanguage(language)) return `<pre class="hljs"><code>${hljs.highlight(code, { language }).value}</code></pre>`;
-    return `<pre class="hljs"><code>${markdown.utils.escapeHtml(code)}</code></pre>`;
+    const label = language ? ` data-lang="${markdown.utils.escapeHtml(language)}"` : "";
+    if (language && hljs.getLanguage(language)) return `<pre class="hljs"${label}><code>${hljs.highlight(code, { language }).value}</code></pre>`;
+    return `<pre class="hljs"${label}><code>${markdown.utils.escapeHtml(code)}</code></pre>`;
   } });
   markdown.use(katexPlugin);
+  markdown.use(calloutPlugin);
   markdown.renderer.rules.math_inline = (tokens, index) =>
     katex.renderToString(tokens[index].content, { throwOnError: false });
   markdown.renderer.rules.math_block = (tokens, index) =>

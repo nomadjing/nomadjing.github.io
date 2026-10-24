@@ -5,7 +5,7 @@ export const siteViews = {
   about: "/about/",
 };
 
-export type PageKind = "home" | "notes" | "tags" | "tag" | "about" | "directory" | "note";
+export type PageKind = "home" | "notes" | "tags" | "tag" | "about" | "directory" | "note" | "not-found";
 export interface Breadcrumb { label: string; url: string; }
 
 export function pageNavigation(
@@ -17,7 +17,8 @@ export function pageNavigation(
 ) {
   const breadcrumbs: Breadcrumb[] = [{ label: siteName, url: siteViews.home }];
   let directory = "/";
-  if (kind === "about") {
+  if (kind === "not-found") breadcrumbs.push({ label: "404", url });
+  else if (kind === "about") {
     breadcrumbs.push({ label: "About", url });
     directory = "/about";
   }
@@ -44,6 +45,6 @@ export function pageNavigation(
     breadcrumbs,
     parentUrl: breadcrumbs.at(-2)?.url,
     directory,
-    section: kind === "home" ? "" : kind === "about" ? "about" : kind === "tags" || kind === "tag" ? "tags" : "notes",
+    section: kind === "home" || kind === "not-found" ? "" : kind === "about" ? "about" : kind === "tags" || kind === "tag" ? "tags" : "notes",
   };
 }

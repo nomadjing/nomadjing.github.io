@@ -1,10 +1,10 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { cp, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readdir, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadConfig } from "../src/config.js";
 import { loadPublishedNotes } from "../src/content.js";
-import type { SiteConfig } from "../src/types.js";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const expectedRemote = /(?:github\.com[:/])nomadjing\/nomadjing\.github\.io(?:\.git)?$/i;
@@ -20,7 +20,7 @@ function git(args: string[], cwd = projectRoot): string {
 }
 
 async function main(): Promise<void> {
-  const config = JSON.parse(await readFile(path.join(projectRoot, "site.config.json"), "utf8")) as SiteConfig;
+  const config = await loadConfig(projectRoot);
   const vault = path.resolve(projectRoot, process.env.CONTENT_ROOT ?? config.contentRoot);
   if (!await stat(vault).then((info) => info.isDirectory(), () => false)) {
     throw new Error(`Notes directory does not exist: ${vault}`);

@@ -3,6 +3,7 @@
   "baseUrl": "https://nomadjing.github.io",
   "contentRoot": "../Nomad",
   "fallbackContentRoot": "./content",
+  "lang": "zh-CN",
   "author": "nomad",
   "displayName": "nomad's blog",
   "tagline": "Programs, proofs & research.",
@@ -15,13 +16,13 @@
       "title": "ArkLifeguard",
       "description": "A command-line static analysis tool for HarmonyOS/OpenHarmony ArkTS applications.",
       "status": "research in progress",
-      "url":"https://github.com/nomadjing/ArkLifeguard"
+      "url": "https://github.com/nomadjing/ArkLifeguard"
     },
     {
       "title": "IFDS-IDE-reproduction",
       "description": "Reproducing the IFDS and IDE algorithms for interprocedural program analysis.",
       "status": "ongoing",
-      "url":"https://github.com/nomadjing/IFDS-IDE-reproduction"
+      "url": "https://github.com/nomadjing/IFDS-IDE-reproduction"
     }
   ],
   "featuredWriting": []

@@ -1,0 +1,74 @@
+/* Note page reading aids: progress on the header rule, and the outline. */
+
+.note-layout > article { width: min(100%, var(--article-width)); }
+
+/* The header's bottom rule doubles as the progress track. */
+.reading-progress {
+  --reading-progress: 0;
+  position: fixed;
+  top: calc(var(--reading-header-height, 0px) - 5px);
+  left: 50%;
+  z-index: 31;
+  width: min(100% - var(--page-gutter), var(--page-width));
+  transform: translateX(-50%);
+}
+.reading-progress[hidden] { display: none; }
+.reading-progress-track { position: relative; display: block; height: 9px; cursor: pointer; touch-action: none; user-select: none; }
+.reading-progress-track:focus-visible { outline-offset: 1px; }
+.reading-progress-fill { position: absolute; top: 3.5px; left: 0; width: 100%; height: 2px; background: var(--accent); transform: scaleX(var(--reading-progress)); transform-origin: left; }
+
+.reading-outline { font: .78rem/1.5 var(--font-mono); }
+.reading-outline-title { margin: 0 0 .7rem; color: var(--muted); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; }
+.reading-outline ol { margin: 0; padding: 0; border-left: 1px solid var(--line); list-style: none; }
+.reading-outline li { margin: .05rem 0; }
+.reading-outline li ol { border-left: 0; }
+.reading-outline li li a { padding-left: 1.5rem; }
+.reading-outline a { display: block; margin-left: -1px; padding: .3rem .7rem; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; overflow-wrap: anywhere; }
+.reading-outline a:hover, .reading-outline a.active { border-left-color: var(--accent); color: var(--accent); }
+.reading-outline a.active { background: var(--hover); }
+
+/* Narrow screens: a drawer behind a corner button. */
+.reading-outline-toggle { position: fixed; right: 1rem; bottom: 1rem; z-index: 21; border-color: var(--line); background: var(--paper); color: var(--accent); }
+.reading-outline nav {
+  position: fixed;
+  top: var(--reading-header-height, 0px);
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  width: min(19rem, 85vw);
+  padding: 2rem 1rem 4rem;
+  overflow: auto;
+  border-left: 1px solid var(--line);
+  background: var(--paper);
+  box-shadow: -8px 0 20px var(--panel-shadow);
+  visibility: hidden;
+  transform: translateX(100%);
+  transition: transform 220ms ease, visibility 220ms ease;
+  scrollbar-width: thin;
+}
+.reading-outline.open nav { visibility: visible; transform: none; }
+
+/* Wide screens: article and outline share the header's width. */
+@media (min-width: 1100px) {
+  /* Article on the left edge, outline on the right edge of the header's width. */
+  .has-reading-outline .note-layout { display: grid; grid-template-columns: minmax(0, var(--article-width)) var(--outline-width); gap: 3rem; justify-content: space-between; align-items: start; }
+  .has-reading-outline .note-layout > article { width: auto; }
+  .reading-outline { position: sticky; top: calc(var(--reading-header-height, 5rem) + 2.5rem); }
+  .reading-outline-toggle { display: none; }
+  /* Subsections fold away except under the section being read. */
+  .reading-outline li > ol { display: none; }
+  .reading-outline li.expanded > ol { display: block; }
+  .reading-outline li.has-subsections:not(.expanded) > a::after { margin-left: .4rem; color: var(--line); content: "+"; }
+  .reading-outline nav {
+    position: static;
+    width: auto;
+    max-height: calc(100dvh - var(--reading-header-height, 5rem) - 5rem);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    visibility: visible;
+    transform: none;
+    transition: none;
+  }
+}

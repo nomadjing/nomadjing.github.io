@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { renderNoteHeatmap } from "../public/heatmap.js";
+import { renderNoteHeatmap } from "../public/js/terminal/heatmap.js";
 
 test("heatmap counts latest published-note dates without inventing dates", () => {
   const result = renderNoteHeatmap([

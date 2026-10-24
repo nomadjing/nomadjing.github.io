@@ -1,0 +1,96 @@
+/* Element defaults and site-wide details. */
+
+* { box-sizing: border-box; }
+
+html {
+  background: var(--paper);
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+html::-webkit-scrollbar { width: 8px; height: 8px; }
+html::-webkit-scrollbar-thumb { border: 2px solid var(--paper); border-radius: 8px; background: var(--line); }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 17px/1.8 var(--font-serif);
+  -webkit-font-smoothing: antialiased;
+  /* Code, paths and diagnostics must show `-->` and `!=` as typed. */
+  font-variant-ligatures: no-contextual no-common-ligatures;
+  font-feature-settings: "calt" 0, "liga" 0;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4 { line-height: 1.3; text-wrap: balance; }
+h1, h2 { font-weight: 400; }
+strong, b { font-weight: 600; }
+button, input { font: inherit; }
+::selection { background: var(--selection); color: var(--ink); }
+
+a { color: var(--link); text-underline-offset: .22em; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+kbd {
+  display: inline-block;
+  padding: 0 .38em;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  font: .82em/1.5 var(--font-mono);
+}
+
+/* A faint dot grid, like graph paper or a canvas, fading out below the header.
+   The home page gets a taller field; reading areas stay clean. */
+body { position: relative; isolation: isolate; }
+body::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: -1;
+  height: 16rem;
+  pointer-events: none;
+  content: "";
+  background-image: radial-gradient(var(--grid-dot) 1px, transparent 1.3px);
+  background-position: center top;
+  background-size: 22px 22px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent);
+  mask-image: linear-gradient(to bottom, #000 30%, transparent);
+}
+.page-home::before, .page-not-found::before { height: 38rem; }
+/* Long reads have a solid sticky header; no grid behind it. */
+.page-note::before, .page-about::before { display: none; }
+
+/* A block cursor, as at the end of a shell prompt. */
+.cursor {
+  display: inline-block;
+  width: .5em;
+  height: 1.05em;
+  margin-left: .12em;
+  vertical-align: -.12em;
+  background: var(--accent);
+  animation: cursor-blink 1.1s steps(1) infinite;
+}
+@keyframes cursor-blink { 50% { opacity: 0; } }
+
+.broken-link { color: var(--broken); text-decoration: underline dotted; cursor: help; }
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.icon-button svg { width: 1.05rem; height: 1.05rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.icon-button:hover { border-color: var(--line); background: var(--hover); color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

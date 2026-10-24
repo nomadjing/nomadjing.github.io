@@ -3,8 +3,17 @@
   <p class="intro-tagline">{{TAGLINE}}</p>
   <p class="intro-copy">{{INTRO}}</p>
   <div class="research-topics" aria-label="Research interests">{{RESEARCH_KEYWORDS}}</div>
-  <div class="off-hours"><span class="off-hours-label">// off the clock</span><p>{{HOBBIES}}</p></div>
+  <dl class="intro-facts">{{FACTS}}</dl>
 </section>
-<section class="home-projects"><h2>Projects</h2><div class="project-list">{{PROJECTS}}</div></section>
+<section class="home-section home-projects">
+  <h2 class="section-title">projects</h2>
+  <div class="project-list">{{PROJECTS}}</div>
+</section>
 {{NOW}}
-<section class="home-writing"><div class="section-heading"><h2>Selected Writing</h2><a class="section-more" href="/notes/">All notes <span aria-hidden="true">↗</span></a></div><ul class="writing-list">{{WRITING}}</ul></section>
+<section class="home-section home-writing">
+  <div class="section-heading">
+    <h2 class="section-title">writing</h2>
+    <a class="section-more" href="/notes/">all notes →</a>
+  </div>
+  {{WRITING}}
+</section>

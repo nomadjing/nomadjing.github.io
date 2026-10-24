@@ -30,16 +30,36 @@ function noteUrl(relativePath: string): string {
 export async function loadPublishedNotes(contentRoot: string): Promise<Note[]> {
   const notes: Note[] = [];
   for (const sourcePath of await markdownFiles(contentRoot)) {
-    const parsed = matter(await readFile(sourcePath, "utf8"));
+    const source = await readFile(sourcePath, "utf8");
+    const parsed = matter(source);
     if (parsed.data.publish !== true && parsed.data.publish !== "true") continue;
     const relativePath = path.relative(contentRoot, sourcePath);
     const url = noteUrl(relativePath);
     const status = ["seed", "growing", "stable"].includes(parsed.data.status) ? parsed.data.status as NoteStatus : undefined;
     notes.push({ sourcePath, relativePath, url, outputPath: path.join(...url.split("/").filter(Boolean), "index.html"), markdown: parsed.content, html: "",
       title: typeof parsed.data.title === "string" ? parsed.data.title : path.basename(sourcePath, path.extname(sourcePath)),
-      date: isoDate(parsed.data.date), updated: isoDate(parsed.data.updated), tags: Array.isArray(parsed.data.tags) ? parsed.data.tags.map(String) : [], status });
+      date: isoDate(parsed.data.date), updated: isoDate(parsed.data.updated), tags: Array.isArray(parsed.data.tags) ? parsed.data.tags.map(String) : [], status,
+      lang: typeof parsed.data.lang === "string" ? parsed.data.lang : undefined,
+      bodyLine: bodyLine(source, parsed.content) });
   }
+  assertUniqueUrls(notes);
   return notes.sort((a, b) => a.title.localeCompare(b.title));
+}
+
+/** 1-based line of the source file where the Markdown body (after frontmatter) starts. */
+function bodyLine(source: string, body: string): number {
+  if (!source.endsWith(body)) return 1;
+  return source.slice(0, source.length - body.length).split("\n").length;
+}
+
+/** Two files whose paths slugify alike would silently overwrite each other's page. */
+function assertUniqueUrls(notes: Note[]): void {
+  const byUrl = new Map<string, Note>();
+  for (const note of notes) {
+    const existing = byUrl.get(note.url);
+    if (existing) throw new Error(`URL collision at ${note.url}: "${existing.relativePath}" and "${note.relativePath}"; rename one of them`);
+    byUrl.set(note.url, note);
+  }
 }
 
 export async function loadSiteContent(projectRoot: string, config: Pick<SiteConfig, "contentRoot" | "fallbackContentRoot">, override?: string): Promise<{ root: string; notes: Note[] }> {

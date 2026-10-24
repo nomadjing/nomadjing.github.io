@@ -40,7 +40,7 @@ npm ci
 npm run dev
 ```
 
-打开 <http://127.0.0.1:4173>。`dev` 会先执行一次构建并提供本地服务；修改源码或笔记后，重新运行命令才能看到新内容。
+打开 <http://127.0.0.1:4173>。`dev` 会先构建一次并提供本地服务，之后监听源码、模板、样式和笔记目录，改动后自动重新构建并刷新浏览器。不存在的路径会返回 `404.html`，与 GitHub Pages 行为一致。
 
 如果只想生成静态文件，运行 `npm run build`，结果在 `dist/`。
 
@@ -60,7 +60,37 @@ npm run dev
 - 通过终端导航后，终端保持打开并恢复命令历史、输出；Esc、关闭按钮或 `exit` 主动关闭时清空会话。
 - `/tags/某标签` 是笔记链接视图：`ls`、`tree` 显示 `笔记名 -> /notes/实际路径`，`open 笔记名` 跟随链接打开原文；同名笔记可用完整目标路径区分。标签视图不复制笔记。
 - 输入 `help` 查看命令，`Tab` 补全命令，`↑` / `↓` 浏览命令历史。
-- 阅读笔记时顶部导航固定显示；进度条可点击或拖动定位，支持鼠标和触屏。进度条聚焦后可用方向键、Page Up / Down、Home / End 调整阅读位置。
+- 输入时像 fish 一样实时着色（已知命令、未知命令、存在的路径），并以灰色给出建议（来自历史或唯一补全），按 `→` 或 `End` 接受；右侧显示上条命令状态和时间。
+- 阅读笔记时顶部导航固定显示，导航下方的分隔线就是阅读进度条：可点击或拖动定位，支持鼠标和触屏；聚焦后可用方向键、Page Up / Down、Home / End 调整阅读位置。
+- 宽屏下文章目录固定在正文右侧；窄屏下点右下角按钮展开。
+- Notes 页按 `/` 聚焦搜索框。
+- 终端第一次打开时才加载站点索引 `garden-index.json`，不使用终端的访问者不会下载它。
+
+## 项目结构
+
+```
+src/            构建程序（TypeScript）
+  build.ts        入口：npm run build
+  build-site.ts   读取笔记 → 生成页面列表 → 写入 dist/
+  config.ts       读取 site.config.json（lang 默认 zh-CN）
+  content.ts      读取已发布笔记；路径 slug 后 URL 冲突会直接报错
+  site.ts         由笔记推导目录树、标签、about/now 等站点模型
+  pages/          各类页面：note、notes（目录树）、tags、home、misc（about / 404）
+  markdown.ts …   Markdown、WikiLink、图片处理
+templates/      HTML 模板（layout、note、index、not-found）
+styles/         样式分层，按文件名顺序合并为 dist/style.css
+public/         原样复制的浏览器文件（*.d.ts 除外）
+  main.js         入口，调用 js/app.js 的 boot()
+  js/             各功能模块；terminal/ 为终端（shell 界面、garden 站点模型、commands 命令）
+scripts/        dev-server（监听 + 自动刷新）、publish
+test/           node:test 测试，浏览器模块通过注入假的 document/window 测试
+```
+
+浏览器端 JS 使用 JSDoc 标注类型，`npm run typecheck` 会一并检查（类型定义见 `public/js/types.d.ts`）。
+
+笔记 frontmatter 可以写 `lang: en` 覆盖站点默认语言。
+
+Obsidian callout（`> [!tip] 标题`、`[!warning]-` 可折叠）会渲染成编译器诊断的样式：`help: 标题`、`--> 文件.md:行号`，再加左侧竖线。类型对应的级别为 note / help / warning / error。
 
 ## 发布
 

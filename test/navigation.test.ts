@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import vm from "node:vm";
+import { boot } from "../public/js/app.js";
 import { pageNavigation, siteViews, type PageKind } from "../src/navigation.js";
+
+const settle = () => new Promise((resolve) => setImmediate(resolve));
 
 class Element {
   handlers = new Map<string, (event: any) => void>();
@@ -45,9 +46,8 @@ async function page(pathname = "/research/topic/note/", withTerminal = true, kin
   }
   const keyHandlers: Array<(event: any) => void> = [];
   const location = { pathname, href: pathname };
-  const source = (await readFile(new URL("../public/main.js", import.meta.url), "utf8"))
-    .replace(/^import .*;\n/, "");
-  vm.runInNewContext(source, {
+  let fetches = 0;
+  boot({
     document: {
       querySelector: (selector: string) => nodes.get(selector) ?? null,
       querySelectorAll: () => [],
@@ -67,7 +67,7 @@ async function page(pathname = "/research/topic/note/", withTerminal = true, kin
       setItem: (key: string, value: string) => storage.set(key, value),
       removeItem: (key: string) => storage.delete(key),
     },
-    fetch: async () => ({ ok: true, json: async () => ({
+    fetch: async () => (fetches += 1, { ok: true, json: async () => ({
       views: siteViews,
       links: [{ directory: "/tags/ifds", path: "/tags/ifds/research/topic/note/", title: "Note", target: "/notes/research/topic/note/" }],
       directories: [
@@ -87,10 +87,11 @@ async function page(pathname = "/research/topic/note/", withTerminal = true, kin
     }) }),
     console: { warn: (message: string, error: Error) => { throw error; } },
   });
-  await new Promise((resolve) => setImmediate(resolve));
+  await settle();
   return {
     location,
     nodes,
+    get fetches() { return fetches; },
     key(overrides: Record<string, unknown> = {}) {
       const event = {
         key: "ArrowUp", altKey: true, defaultPrevented: false,
@@ -101,9 +102,18 @@ async function page(pathname = "/research/topic/note/", withTerminal = true, kin
       keyHandlers.forEach((handler) => handler(event));
       return event;
     },
-    command(value: string) {
+    /** Commands wait for the lazily fetched site index, so let it settle. */
+    async command(value: string) {
       nodes.get("#terminal-input")!.value = value;
       nodes.get("#terminal-form")!.handlers.get("submit")!({ preventDefault() {} });
+      await settle();
+    },
+    async tab(value: string) {
+      const input = nodes.get("#terminal-input")!;
+      input.value = value;
+      input.handlers.get("keydown")!({ key: "Tab", preventDefault() {} });
+      await settle();
+      return input.value;
     },
   };
 }
@@ -152,13 +162,13 @@ test("up and shortcuts share the UI parent for directories, root notes and tag v
     ["/about/", "about", "/"],
   ] as const) {
     const current = await page(url, true, kind);
-    current.command("up");
+    await current.command("up");
     assert.equal(current.location.href, parent);
     current.location.href = url;
     current.key();
     assert.equal(current.location.href, parent);
     if (kind !== "note") {
-      current.command("cd ..");
+      await current.command("cd ..");
       assert.equal(current.location.href, parent);
     }
   }
@@ -169,17 +179,17 @@ test("terminal root and site commands land on the same pages as UI links", async
   for (const [name, url] of Object.entries(siteViews)) {
     const path = url === "/" ? "/" : url.replace(/\/$/, "");
     for (const command of [name, `cd ${path}`, `open ${path}`]) {
-      current.command(command);
+      await current.command(command);
       assert.equal(current.location.href, url, command);
     }
   }
-  current.command("ls /");
+  await current.command("ls /");
   assert.equal(current.nodes.get("#terminal-output")!.children.at(-1)!.textContent, "about/  notes/  tags/");
-  current.command("ls /notes");
+  await current.command("ls /notes");
   assert.equal(current.nodes.get("#terminal-output")!.children.at(-1)!.textContent, "research/");
-  current.command("cd /notes/research/topic");
+  await current.command("cd /notes/research/topic");
   assert.equal(current.location.href, "/research/topic/");
-  current.command("open Note");
+  await current.command("open Note");
   assert.equal(current.location.href, "/research/topic/note/");
 
 });
@@ -188,15 +198,15 @@ test("cd keeps the terminal open with history and output after page navigation",
   const storage = new Map<string, string>();
   const before = await page("/", true, "home", storage);
   before.nodes.get("#terminal-toggle")!.handlers.get("click")!({});
-  before.command("cd /tags/ifds");
+  await before.command("cd /tags/ifds");
   assert.equal(before.location.href, "/tags/ifds/");
   const after = await page("/tags/ifds/", true, "tag", storage);
   assert.equal(after.nodes.get("#terminal")!.hidden, false);
   assert.equal(after.nodes.get("#terminal-cwd")!.textContent, "~/tags/ifds");
   assert.ok(after.nodes.get("#terminal-output")!.children.some((line) => line.textContent.includes("moving to /tags/ifds")));
-  after.command("history");
+  await after.command("history");
   assert.match(after.nodes.get("#terminal-output")!.children.at(-1)!.textContent, /cd \/tags\/ifds/);
-  after.command("cd /notes");
+  await after.command("cd /notes");
   after.key({ key: "Escape", altKey: false });
   const closed = await page("/notes/", true, "notes", storage);
   assert.equal(closed.nodes.get("#terminal")!.hidden, true);
@@ -204,41 +214,28 @@ test("cd keeps the terminal open with history and output after page navigation",
 
 test("tag directories list links and open them at the canonical note URL", async () => {
   const current = await page("/tags/ifds/", true, "tag");
-  current.command("ls");
+  await current.command("ls");
   assert.equal(current.nodes.get("#terminal-output")!.children.at(-1)!.textContent, "Note -> /notes/research/topic/note");
-  current.command("tree");
+  await current.command("tree");
   assert.match(current.nodes.get("#terminal-output")!.children.at(-1)!.textContent, /Note -> \/notes\/research\/topic\/note/);
   for (const name of ["Note", "/tags/ifds/research/topic/note", "/notes/research/topic/note"]) {
-    current.command(`open ${name}`);
+    await current.command(`open ${name}`);
     assert.equal(current.location.href, "/research/topic/note/");
   }
-  current.nodes.get("#terminal-input")!.value = "open No";
-  current.nodes.get("#terminal-input")!.handlers.get("keydown")!({ key: "Tab", preventDefault() {} });
-  assert.equal(current.nodes.get("#terminal-input")!.value, "open Note");
+  assert.equal(await current.tab("open No"), "open Note");
 });
 
 test("directory command completion excludes matching note titles", async () => {
   const current = await page("/tags/", true, "tags");
-  const input = current.nodes.get("#terminal-input")!;
-  for (const command of ["cd", "ls", "tree"]) {
-    input.value = `${command} a`;
-    input.handlers.get("keydown")!({ key: "Tab", preventDefault() {} });
-    assert.equal(input.value, `${command} algorithms`);
-  }
-  input.value = "cd /tags/a";
-  input.handlers.get("keydown")!({ key: "Tab", preventDefault() {} });
-  assert.equal(input.value, "cd /tags/algorithms");
-  input.value = "open Ag";
-  input.handlers.get("keydown")!({ key: "Tab", preventDefault() {} });
-  assert.equal(input.value, "open Ag");
-  input.value = "cat a";
-  input.handlers.get("keydown")!({ key: "Tab", preventDefault() {} });
-  assert.equal(input.value, "cat about");
+  for (const command of ["cd", "ls", "tree"])
+    assert.equal(await current.tab(`${command} a`), `${command} algorithms`);
+  assert.equal(await current.tab("cd /tags/a"), "cd /tags/algorithms");
+  assert.equal(await current.tab("open Ag"), "open Ag");
+  assert.equal(await current.tab("cat a"), "cat about");
 });
 
 test("completion scopes notes and paths to the current or specified directory", async () => {
   const current = await page();
-  const input = current.nodes.get("#terminal-input")!;
   for (const [value, expected] of [
     ["open Ag", "open Agent"],
     ["cd ../t", "cd ../topic"],
@@ -247,17 +244,11 @@ test("completion scopes notes and paths to the current or specified directory", 
     ["open /tags/ifds/No", "open /tags/ifds/Note"],
     ["open /tags/algorithms/Ag", "open /tags/algorithms/Ag"],
     ["cd /missing/a", "cd /missing/a"],
-  ]) {
-    input.value = value;
-    input.handlers.get("keydown")!({ key: "Tab", preventDefault() {} });
-    assert.equal(input.value, expected, value);
-  }
-  current.command("open /tags/ifds/Note");
+  ]) assert.equal(await current.tab(value), expected, value);
+  await current.command("open /tags/ifds/Note");
   assert.equal(current.location.href, "/research/topic/note/");
-  current.command("cd /tags");
-  input.value = "open Ag";
-  input.handlers.get("keydown")!({ key: "Tab", preventDefault() {} });
-  assert.equal(input.value, "open Ag");
+  await current.command("cd /tags");
+  assert.equal(await current.tab("open Ag"), "open Ag");
 });
 
 test("terminal button toggles both ways and maintains its accessible state", async () => {
@@ -302,16 +293,27 @@ test("parent shortcut preserves editing, composition, and other key combinations
 
 test("up returns to the note's directory while cd .. keeps shell directory semantics", async () => {
   const current = await page();
-  current.command("up");
+  await current.command("up");
   assert.equal(current.location.href, "/research/topic/");
-  current.command("cd ..");
+  await current.command("cd ..");
   assert.equal(current.location.href, "/research/");
 });
 
 test("home has no parent navigation and the terminal explains it", async () => {
   const current = await page("/");
   assert.equal(current.key().defaultPrevented, false);
-  current.command("up");
+  await current.command("up");
   assert.equal(current.location.href, "/");
   assert.equal(current.nodes.get("#terminal-output")!.children.at(-1)!.textContent, "Already at the site root.");
+});
+
+test("the site index is fetched only once the terminal is used", async () => {
+  const current = await page();
+  assert.equal(current.fetches, 0);
+  current.nodes.get("#terminal-toggle")!.handlers.get("click")!({});
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(current.fetches, 1);
+  await current.command("pwd");
+  assert.equal(current.nodes.get("#terminal-output")!.children.at(-1)!.textContent, "/notes/research/topic");
+  assert.equal(current.fetches, 1);
 });

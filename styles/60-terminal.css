@@ -1,0 +1,73 @@
+/* The site terminal docked at the bottom of the viewport. */
+
+.terminal {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  height: min(var(--terminal-height, 300px), 75dvh);
+  border-top: 3px double var(--terminal-edge);
+  background: var(--terminal-bg);
+  color: var(--ink);
+  box-shadow: 0 -12px 28px var(--terminal-shadow);
+  font: .84rem/1.55 var(--font-mono);
+}
+.terminal[hidden] { display: none; }
+.terminal > :not(.terminal-resize) { width: min(100% - 2rem, var(--page-width)); margin-inline: auto; }
+
+.terminal-resize { position: absolute; top: 0; left: 50%; z-index: 1; width: 4rem; height: 1rem; padding: 0; border: 0; border-radius: 1rem; background: var(--terminal-bg); color: var(--terminal-edge); cursor: ns-resize; touch-action: none; transform: translate(-50%, -50%); }
+.terminal-resize::after { display: block; width: 2rem; margin: auto; border-top: 3px solid currentColor; content: ""; }
+
+.terminal-heading { display: flex; align-items: center; justify-content: space-between; padding: .5rem 0; border-bottom: 1px solid var(--terminal-rule); color: var(--soft-ink); letter-spacing: .04em; }
+.terminal-close { padding: 0 .3rem; border: 0; background: transparent; color: var(--ink); font-size: 1.25rem; line-height: 1; cursor: pointer; }
+
+.terminal-output { flex: 1 1 auto; min-height: 0; padding: .6rem 0; overflow: auto; overscroll-behavior: contain; white-space: pre-wrap; overflow-wrap: anywhere; scrollbar-width: thin; scrollbar-color: var(--terminal-rule) transparent; }
+.terminal-line { min-height: 1.2em; }
+.terminal-line.command { color: var(--ink); }
+.terminal-line.error { color: var(--broken); }
+.terminal-line.hint { color: var(--terminal-hint); }
+.line-prompt { color: var(--muted); }
+.terminal-line + .terminal-line.command { margin-top: .45rem; }
+
+/* `ls --color`: directories bold in the link colour, links with a dim arrow. */
+.ls-branch, .ls-arrow { color: var(--muted); }
+.ls-dir { color: var(--link); font-weight: 700; }
+.ls-link { color: var(--syntax-title); }
+.ls-target { color: var(--muted); }
+
+/* Prompt line: powerline segments, the command line, then a right prompt. */
+.terminal form { display: flex; align-items: center; gap: .7rem; margin-bottom: .35rem; padding: .3rem .6rem .3rem .3rem; border: 1px solid var(--terminal-rule); border-radius: 3px; background: var(--terminal-input-bg); }
+.terminal-prompt { display: inline-flex; flex: 0 0 auto; font-size: .78rem; line-height: 1.9; }
+.prompt-user, .prompt-path { padding: 0 1rem 0 .6rem; clip-path: polygon(0 0, calc(100% - .55rem) 0, 100% 50%, calc(100% - .55rem) 100%, 0 100%); }
+.prompt-user { border-radius: 2px 0 0 2px; background: var(--accent); color: var(--terminal-input-bg); font-weight: 700; }
+.prompt-path { margin-left: -.4rem; padding-left: 1rem; background: var(--terminal-rule); color: var(--ink); clip-path: polygon(0 0, calc(100% - .55rem) 0, 100% 50%, calc(100% - .55rem) 100%, 0 100%, .55rem 50%); }
+
+.terminal-field { position: relative; flex: 1 1 auto; min-width: 2rem; overflow: hidden; line-height: 1.6; }
+.terminal input { position: relative; z-index: 1; display: block; width: 100%; height: 1.6em; margin: 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--ink); caret-color: var(--accent); font: inherit; line-height: inherit; }
+/* With the mirror present the input only supplies the caret and selection. */
+.has-mirror input { color: transparent; }
+.has-mirror input::selection { background: var(--selection); color: transparent; }
+.terminal-mirror { position: absolute; top: 0; left: 0; color: var(--ink); white-space: pre; pointer-events: none; }
+.cmd-ok { color: var(--accent); }
+.cmd-bad { color: var(--broken); }
+.arg-valid { text-decoration: underline; text-decoration-color: var(--muted); text-underline-offset: .2em; }
+.ghost { color: var(--muted); opacity: .65; }
+.terminal-rprompt { display: inline-flex; flex: 0 0 auto; gap: .6rem; color: var(--muted); font-size: .72rem; }
+.status-ok { color: var(--accent); }
+.status-bad { color: var(--broken); }
+.terminal-help { margin-top: 0; margin-bottom: 0; padding-bottom: .45rem; color: var(--muted); font-size: .72rem; }
+
+/* While open, the page scrolls inside <main> above the terminal instead of under it. */
+body.terminal-open { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+body.terminal-open .site-header { flex: 0 0 auto; }
+body.terminal-open main { flex: 1 1 auto; width: 100%; min-height: 0; padding-inline: max(var(--page-gutter) / 2, (100% - var(--page-width)) / 2); overflow-y: auto; overscroll-behavior: contain; }
+body.terminal-open .terminal { position: relative; flex: 0 0 auto; }
+body.terminal-open :is(.reading-progress, .reading-outline-toggle, .site-footer) { display: none; }
+body.terminal-open .reading-outline nav { max-height: none; }
+
+@media (max-width: 620px) {
+  .terminal { height: min(var(--terminal-height, 360px), 75dvh); }
+}

@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import vm from "node:vm";
+import { boot } from "../public/js/app.js";
 
-async function reader(horizontal = false) {
+async function reader() {
   const handlers = new Map<string, (event: any) => void>();
   const windowHandlers = new Map<string, Array<() => void>>();
   const attributes = new Map<string, string>();
@@ -27,7 +26,8 @@ async function reader(horizontal = false) {
   const window = {
     scrollY: 0,
     innerHeight: 800,
-    matchMedia: () => ({ matches: horizontal }),
+    matchMedia: () => ({ matches: false, addEventListener() {} }),
+    location: { pathname: "/note/", hash: "" },
     addEventListener(name: string, handler: () => void) {
       windowHandlers.set(name, [...windowHandlers.get(name) ?? [], handler]);
     },
@@ -40,9 +40,7 @@ async function reader(horizontal = false) {
     getBoundingClientRect: () => ({ top: 200 - window.scrollY, bottom: 2200 - window.scrollY }),
     querySelectorAll: () => [],
   };
-  const source = (await readFile(new URL("../public/main.js", import.meta.url), "utf8"))
-    .replace(/^import .*;\n/, "");
-  vm.runInNewContext(source, {
+  boot({
     window,
     document: {
       querySelector: (selector: string) => selector === "main > article" ? article
@@ -72,30 +70,21 @@ async function reader(horizontal = false) {
   };
 }
 
-test("vertical progress dragging captures the pointer and clamps to the article", async () => {
+test("progress dragging captures the pointer and clamps to the article", async () => {
   const current = await reader();
-  current.event("pointerdown");
+  current.event("pointerdown", { pointerType: "touch" });
   assert.equal(current.captured, 1);
   assert.equal(current.blurred, true);
   assert.equal(current.window.scrollY, 120);
-  current.event("pointermove", { clientY: 70 });
+  current.event("pointermove", { clientX: 110 });
   assert.equal(current.window.scrollY, 760);
   assert.equal(current.attributes.get("aria-valuenow"), "50");
-  current.event("pointerup", { clientY: 300 });
-  assert.equal(current.window.scrollY, 1400);
-  assert.equal(current.captured, null);
-  current.event("pointermove");
-  assert.equal(current.window.scrollY, 1400);
-});
-
-test("horizontal progress uses the touch pointer's X coordinate", async () => {
-  const current = await reader(true);
-  current.event("pointerdown", { pointerType: "touch", clientX: 110 });
-  assert.equal(current.window.scrollY, 760);
-  assert.equal(current.attributes.get("aria-orientation"), "horizontal");
   current.event("pointermove", { clientX: -50 });
   assert.equal(current.window.scrollY, 120);
   current.event("pointerup", { clientX: 500 });
+  assert.equal(current.window.scrollY, 1400);
+  assert.equal(current.captured, null);
+  current.event("pointermove", { clientX: 110 });
   assert.equal(current.window.scrollY, 1400);
 });
 
@@ -105,10 +94,10 @@ test("cancelled, lost and unrelated pointers cannot continue seeking", async () 
     current.event("pointerdown", { button: 2 });
     assert.equal(current.captured, null);
     current.event("pointerdown");
-    current.event("pointermove", { pointerId: 2, clientY: 70 });
+    current.event("pointermove", { pointerId: 2, clientX: 110 });
     assert.equal(current.window.scrollY, 120);
     current.event(stop);
-    current.event("pointermove", { clientY: 70 });
+    current.event("pointermove", { clientX: 110 });
     assert.equal(current.window.scrollY, 120);
   }
 });
