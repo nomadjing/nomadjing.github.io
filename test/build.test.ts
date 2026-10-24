@@ -38,6 +38,10 @@ test("builds pages, a 404 page and plain-text descriptions", async () => {
     assert.match(topic, /<meta name="description" content="Topic heading See bold Other and \$x\$\.">/);
     assert.match(topic, /<h1 class="note-title">Topic heading<\/h1>/);
     assert.match(topic, /katex\.min\.css/);
+    const version = topic.match(/\/style\.css\?v=([0-9a-f]{10})"/)?.[1];
+    assert.ok(version, "stylesheet URL carries a content hash");
+    assert.match(topic, new RegExp(`/main\\.js\\?v=${version}"`));
+    assert.match(await readFile(path.join(outDir, "js/app.js"), "utf8"), new RegExp(`from "\\./theme\\.js\\?v=${version}"`));
     const other = await readFile(path.join(outDir, "research/other/index.html"), "utf8");
     assert.match(other, /<html lang="zh-CN">/);
     assert.match(other, /<h1 class="note-title">Other<\/h1>/);

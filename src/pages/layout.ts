@@ -38,7 +38,8 @@ function footer(site: SiteModel): string {
   return `<span>© ${new Date().getFullYear()} ${name}</span><span class="footer-hint">press <kbd>\`</kbd> to open the terminal</span>`;
 }
 
-export function createLayout(template: string, site: SiteModel): WrapPage {
+/** `assetVersion` is appended to CSS/JS URLs so each release bypasses stale caches. */
+export function createLayout(template: string, site: SiteModel, assetVersion: string): WrapPage {
   const { config } = site;
   const footerHtml = footer(site);
   return ({ title, description, content, url, kind, lang, math }) => {
@@ -62,6 +63,7 @@ export function createLayout(template: string, site: SiteModel): WrapPage {
       NAV_ABOUT_ATTR: active("about"),
       CONTENT: content,
       FOOTER: footerHtml,
+      ASSET_VERSION: assetVersion,
     });
   };
 }

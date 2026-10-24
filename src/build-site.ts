@@ -36,7 +36,10 @@ export async function buildSite({ projectRoot, outDir, contentRoot: override }: 
   const [layout, noteTemplate, indexTemplate, notFoundTemplate] = await Promise.all(
     ["layout.html", "note.html", "index.html", "not-found.html"].map(template),
   );
-  const wrap = createLayout(layout, site);
+  await rm(outDir, { recursive: true, force: true });
+  await mkdir(outDir, { recursive: true });
+  const assetVersion = await copyStaticAssets(projectRoot, outDir);
+  const wrap = createLayout(layout, site, assetVersion);
   const backlinks = buildBacklinks(notes);
 
   const pages: Page[] = [
@@ -54,9 +57,6 @@ export async function buildSite({ projectRoot, outDir, contentRoot: override }: 
     owners.add(page.file);
   }
 
-  await rm(outDir, { recursive: true, force: true });
-  await mkdir(outDir, { recursive: true });
-  await copyStaticAssets(projectRoot, outDir);
   for (const page of pages) {
     const output = path.join(outDir, page.file);
     await mkdir(path.dirname(output), { recursive: true });

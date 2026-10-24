@@ -8,8 +8,8 @@
   <script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script>
   <link rel="preload" href="/fonts/jetbrains-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   {{HEAD_EXTRA}}
-  <link rel="stylesheet" href="/style.css">
-  <script type="module" src="/main.js"></script>
+  <link rel="stylesheet" href="/style.css?v={{ASSET_VERSION}}">
+  <script type="module" src="/main.js?v={{ASSET_VERSION}}"></script>
 </head>
 <body class="page-{{PAGE_KIND}}">
   <header class="site-header">
