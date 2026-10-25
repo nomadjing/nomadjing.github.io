@@ -58,6 +58,30 @@ test("builds pages, a 404 page and plain-text descriptions", async () => {
   }
 });
 
+test("directory notes sort newest first with undated notes last and title ties", async () => {
+  const root = await project({
+    "research/A.md": fm("A"),
+    "research/B.md": fm("B", "created: 10/24/2026\n"),
+    "research/C.md": fm("C", "date: 2026-10-24\n"),
+    "research/D.md": fm("D", "created: 09/01/2026\nupdated: 2026-10-25\n"),
+    "research/E.md": fm("E", "date: 2026-09-01\n"),
+    "research/F.md": fm("F"),
+    "research/nested/G.md": fm("G", "date: 2026-09-01\n"),
+    "research/nested/H.md": fm("H", "date: 2026-10-25\n"),
+  });
+  try {
+    const outDir = path.join(root, "dist");
+    await buildSite({ projectRoot: root, outDir, contentRoot: path.join(root, "vault") });
+    for (const file of ["notes/index.html", "research/index.html"]) {
+      const html = await readFile(path.join(outDir, file), "utf8");
+      const titles = [...html.matchAll(/class="tree-note"[^>]*><a[^>]*>([^<]+)<\/a>/g)].map((match) => match[1]);
+      assert.deepEqual(titles, ["H", "G", "D", "B", "C", "E", "A", "F"], file);
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("notes whose paths slugify to the same URL are rejected", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "nomad-collide-"));
   try {

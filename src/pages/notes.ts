@@ -14,7 +14,7 @@ function renderTree(node: TreeNode, depth = 0, prefix: string[] = []): string {
       return `<li class="tree-directory"><details${depth === 0 ? " open" : ""}><summary><a href="${directoryUrl(parts)}">${escapeHtml(name)}/</a></summary>${renderTree(child, depth + 1, parts)}</details></li>`;
     });
   const notes = [...node.notes]
-    .sort((a, b) => a.title.localeCompare(b.title))
+    .sort((a, b) => (latestDate(b) ?? "").localeCompare(latestDate(a) ?? "") || a.title.localeCompare(b.title))
     .map((note) => {
       const date = latestDate(note);
       return `<li class="tree-note" data-search="${escapeHtml(`${note.title} ${note.relativePath}`.toLocaleLowerCase())}"><a href="${note.url}">${escapeHtml(note.title)}</a>${date ? `<time datetime="${date}">${date}</time>` : ""}</li>`;
