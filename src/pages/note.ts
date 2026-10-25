@@ -12,7 +12,7 @@ function metadata(note: Note): string {
   if (note.status) rows.push(["status", escapeHtml(note.status)]);
   rows.push(["read", `~${readingMinutes(note.markdown)} min`]);
   if (note.tags.length) rows.push(["tags", tags]);
-  return rows.map(([key, value]) => `<div><dt>${key}</dt><dd>${value}</dd></div>`).join("");
+  return rows.map(([key, value]) => `<div${key === "tags" ? ' class="metadata-tags"' : ""}><dt>${key}</dt><dd>${value}</dd></div>`).join("");
 }
 
 /** A note's leading `# heading` becomes the page title; otherwise the frontmatter title is shown. */

@@ -5,6 +5,7 @@
 
 .metadata { display: flex; flex-wrap: wrap; gap: .3rem 1.4rem; margin: 0; color: var(--soft-ink); font: .74rem/1.7 var(--font-mono); }
 .metadata div { display: flex; gap: .5rem; min-width: 0; }
+.metadata .metadata-tags { flex-basis: 100%; }
 .metadata dt { color: var(--muted); opacity: .8; }
 .metadata dd { margin: 0; overflow-wrap: anywhere; }
 .metadata dd a { margin-right: .5rem; color: var(--accent); text-decoration: none; }

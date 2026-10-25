@@ -39,6 +39,26 @@ $$`;
   assert.doesNotMatch(html, /katex-error/);
 });
 
+test("created dates support US format while explicit dates take precedence", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "nomad-dates-"));
+  try {
+    const cases = [
+      ["created: 10/25/2026", "2026-10-25"],
+      ['created: "02/29/2024"', "2024-02-29"],
+      ["created: 2026-10-25", "2026-10-25"],
+      ["date: 2026-09-01\ncreated: 10/25/2026", "2026-09-01"],
+      ["created: 02/29/2025", undefined],
+      ["created: 13/01/2026", undefined],
+      ["", undefined],
+    ] as const;
+    await Promise.all(cases.map(([metadata], i) => writeFile(path.join(root, `${i}.md`), `---\npublish: true\n${metadata}\n---\n`)));
+    const notes = await loadPublishedNotes(root);
+    assert.deepEqual(notes.map((note) => note.date), cases.map(([, expected]) => expected));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("uses fallback notes when the primary vault has no published notes", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "nomad-content-"));
   const primary = path.join(root, "vault");

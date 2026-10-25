@@ -11,7 +11,7 @@ function renderTree(node: TreeNode, depth = 0, prefix: string[] = []): string {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, child]) => {
       const parts = [...prefix, name];
-      return `<li class="tree-directory"><details${depth === 0 ? " open" : ""}><summary><a href="${directoryUrl(parts)}">${escapeHtml(name)}/</a><span class="tree-count">${countNotes(child)}</span></summary>${renderTree(child, depth + 1, parts)}</details></li>`;
+      return `<li class="tree-directory"><details${depth === 0 ? " open" : ""}><summary><a href="${directoryUrl(parts)}">${escapeHtml(name)}/</a></summary>${renderTree(child, depth + 1, parts)}</details></li>`;
     });
   const notes = [...node.notes]
     .sort((a, b) => a.title.localeCompare(b.title))

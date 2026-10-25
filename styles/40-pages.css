@@ -7,6 +7,7 @@
 .home-section { margin-top: 4.2rem; }
 
 /* Home */
+.page-home { --measure: 56rem; }
 .intro { max-width: var(--measure); }
 .intro h1 { display: flex; align-items: baseline; margin: 0; font: 700 clamp(2rem, 5vw, 2.7rem)/1.2 var(--font-mono); letter-spacing: -.035em; }
 .intro-mark { flex: 0 0 auto; margin-right: .6em; color: var(--accent); font-size: .6em; letter-spacing: 0; }
@@ -55,7 +56,6 @@
 .tree-directory details[open] > summary::before { content: "▾"; }
 .tree-directory summary a { color: inherit; text-decoration: none; }
 .tree-directory summary:hover a { color: var(--accent); }
-.tree-count { color: var(--muted); font-size: .72rem; }
 
 /* Tags */
 .tag-list { display: flex; flex-wrap: wrap; gap: .6rem; }

@@ -19,7 +19,18 @@ export function slugify(value: string): string {
 
 function isoDate(value: unknown): string | undefined {
   if (value instanceof Date && !Number.isNaN(value.valueOf())) return value.toISOString().slice(0, 10);
-  if (typeof value === "string" || typeof value === "number") return String(value).match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (typeof value === "string" || typeof value === "number") {
+    const text = String(value);
+    const iso = text.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+    if (iso) return iso;
+    const created = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (created) {
+      const [, month, day, year] = created;
+      const date = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+      const parsed = new Date(`${date}T00:00:00Z`);
+      if (!Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === date) return date;
+    }
+  }
 }
 
 function noteUrl(relativePath: string): string {
@@ -38,7 +49,7 @@ export async function loadPublishedNotes(contentRoot: string): Promise<Note[]> {
     const status = ["seed", "growing", "stable"].includes(parsed.data.status) ? parsed.data.status as NoteStatus : undefined;
     notes.push({ sourcePath, relativePath, url, outputPath: path.join(...url.split("/").filter(Boolean), "index.html"), markdown: parsed.content, html: "",
       title: typeof parsed.data.title === "string" ? parsed.data.title : path.basename(sourcePath, path.extname(sourcePath)),
-      date: isoDate(parsed.data.date), updated: isoDate(parsed.data.updated), tags: Array.isArray(parsed.data.tags) ? parsed.data.tags.map(String) : [], status,
+      date: isoDate(parsed.data.date) ?? isoDate(parsed.data.created), updated: isoDate(parsed.data.updated), tags: Array.isArray(parsed.data.tags) ? parsed.data.tags.map(String) : [], status,
       lang: typeof parsed.data.lang === "string" ? parsed.data.lang : undefined,
       bodyLine: bodyLine(source, parsed.content) });
   }

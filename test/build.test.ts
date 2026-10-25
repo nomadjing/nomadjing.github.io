@@ -27,12 +27,14 @@ async function project(files: Record<string, string>) {
 test("builds pages, a 404 page and plain-text descriptions", async () => {
   const root = await project({
     "research/Topic.md": `${fm("Topic", "lang: en\ntags: [ifds]\n")}# Topic heading\n\nSee **bold** [[Other]] and $x$.`,
-    "research/Other.md": `${fm("Other")}No heading here.`,
+    "research/Other.md": `${fm("Other", "created: 10/25/2026\n")}No heading here.`,
   });
   try {
     const outDir = path.join(root, "dist");
     const result = await buildSite({ projectRoot: root, outDir, contentRoot: path.join(root, "vault") });
     assert.equal(result.notes, 2);
+    const notes = await readFile(path.join(outDir, "notes/index.html"), "utf8");
+    assert.match(notes, /<a href="\/research\/other\/">Other<\/a><time datetime="2026-10-25">2026-10-25<\/time>/);
     const topic = await readFile(path.join(outDir, "research/topic/index.html"), "utf8");
     assert.match(topic, /<html lang="en">/);
     assert.match(topic, /<meta name="description" content="Topic heading See bold Other and \$x\$\.">/);
