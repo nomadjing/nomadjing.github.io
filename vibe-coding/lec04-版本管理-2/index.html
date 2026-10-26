@@ -8,8 +8,8 @@
   <script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script>
   <link rel="preload" href="/fonts/jetbrains-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   
-  <link rel="stylesheet" href="/style.css?v=665390e630">
-  <script type="module" src="/main.js?v=665390e630"></script>
+  <link rel="stylesheet" href="/style.css?v=12883d6848">
+  <script type="module" src="/main.js?v=12883d6848"></script>
 </head>
 <body class="page-note">
   <header class="site-header">
@@ -33,7 +33,7 @@
   <article>
     <header class="note-header">
       <h1 class="note-title">Lec04 · 版本管理（2）</h1>
-      <dl class="metadata"><div><dt>read</dt><dd>~14 min</dd></div><div><dt>tags</dt><dd><a href="/tags/vibe-coding/">#vibe-coding</a></dd></div></dl>
+      <dl class="metadata"><div><dt>created</dt><dd><time datetime="2026-09-28">2026-09-28</time></dd></div><div><dt>read</dt><dd>~14 min</dd></div><div class="metadata-tags"><dt>tags</dt><dd><a href="/tags/vibe-coding/">#vibe-coding</a></dd></div></dl>
     </header>
     <div class="prose"><p>版本管理的设计取决于我们怎样理解项目：需要保存哪些状态、表达哪些关系，以及怎样协调修改。本讲从文件与制品关系出发，进一步讨论变化的身份、Agent 协作和用最小可行产品检验设计。</p>
 <h2>文件保存内容，制品之间还需要可追踪性</h2>

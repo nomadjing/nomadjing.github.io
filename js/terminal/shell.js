@@ -1,7 +1,7 @@
-import { isTyping } from "../parent-nav.js?v=665390e630";
-import { commandNames, createCommandRunner } from "./commands.js?v=665390e630";
-import { createGarden } from "./garden.js?v=665390e630";
-import { inputHtml, lineHtml, suggestion } from "./render.js?v=665390e630";
+import { isTyping } from "../parent-nav.js?v=12883d6848";
+import { commandNames, createCommandRunner } from "./commands.js?v=12883d6848";
+import { createGarden } from "./garden.js?v=12883d6848";
+import { inputHtml, lineHtml, suggestion } from "./render.js?v=12883d6848";
 
 const sessionKey = "nomad-terminal";
 const heightKey = "nomad-terminal-height";
@@ -11,7 +11,7 @@ const promptFor = (/** @type {string} */ cwd) => (cwd === "/" ? "~" : `~${cwd}`)
  * The terminal panel. The site index is fetched the first time the terminal
  * opens, so pages that never use it don't pay for it. Navigating from the
  * terminal carries its history and output to the next page via sessionStorage.
- * @param {import("../types.js?v=665390e630").PageContext} context
+ * @param {import("../types.js?v=12883d6848").PageContext} context
  */
 export function initTerminal({ document, window, fetch, console, HTMLElement, local, session }) {
   /** @type {<T extends HTMLElement = HTMLElement>(selector: string) => T | null} */
@@ -99,7 +99,7 @@ export function initTerminal({ document, window, fetch, console, HTMLElement, lo
   };
 
   // Site index, loaded on demand. Commands typed while it loads run once it arrives.
-  /** @type {import("../types.js?v=665390e630").Garden | null} */
+  /** @type {import("../types.js?v=12883d6848").Garden | null} */
   let garden = null;
   /** @type {Promise<unknown> | null} */
   let gardenRequest = null;
@@ -108,7 +108,7 @@ export function initTerminal({ document, window, fetch, console, HTMLElement, lo
       if (!response.ok) throw new Error(`garden index: ${response.status}`);
       return response.json();
     })
-    .then((/** @type {import("../types.js?v=665390e630").GardenIndex} */ index) => {
+    .then((/** @type {import("../types.js?v=12883d6848").GardenIndex} */ index) => {
       const loaded = createGarden(index);
       initialCwd = loaded.canonicalDirectory(initialCwd) ?? "/";
       cwd = loaded.canonicalDirectory(cwd) ?? initialCwd;
@@ -194,7 +194,7 @@ export function initTerminal({ document, window, fetch, console, HTMLElement, lo
   };
 
   const runCommand = createCommandRunner({
-    get garden() { return /** @type {import("../types.js?v=665390e630").Garden} */ (garden); },
+    get garden() { return /** @type {import("../types.js?v=12883d6848").Garden} */ (garden); },
     get cwd() { return cwd; },
     setCwd(directory) { cwd = directory; showCwd(); },
     get parentUrl() { return /** @type {HTMLAnchorElement | null} */ ($("#parent-link"))?.href; },

@@ -44,7 +44,7 @@ export function closestNote(pathname, notes) {
 /**
  * Fills the 404 diagnostic with the requested path and, once the site index
  * arrives, a "did you mean" suggestion.
- * @param {import("./types.js?v=665390e630").PageContext} context
+ * @param {import("./types.js?v=12883d6848").PageContext} context
  */
 export function initNotFound({ document, window, fetch }) {
   const page = document.querySelector(".not-found");
@@ -56,7 +56,7 @@ export function initNotFound({ document, window, fetch }) {
   if (caret) caret.textContent = "^".repeat(Math.max(1, displayWidth(pathname)));
   fetch("/garden-index.json")
     .then((response) => (response.ok ? response.json() : null))
-    .then((/** @type {import("./types.js?v=665390e630").GardenIndex | null} */ index) => {
+    .then((/** @type {import("./types.js?v=12883d6848").GardenIndex | null} */ index) => {
       const note = closestNote(pathname, index?.notes ?? []);
       const suggestion = /** @type {HTMLElement | null} */ (page.querySelector("[data-suggestion]"));
       const link = /** @type {HTMLAnchorElement | null} */ (page.querySelector("[data-suggestion-link]"));

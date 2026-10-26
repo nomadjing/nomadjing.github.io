@@ -1,17 +1,17 @@
-import { initArchiveSearch } from "./archive.js?v=665390e630";
-import { initDiagrams } from "./diagrams.js?v=665390e630";
-import { initNotFound } from "./not-found.js?v=665390e630";
-import { initParentNavigation } from "./parent-nav.js?v=665390e630";
-import { initReading } from "./reading.js?v=665390e630";
-import { initTerminal } from "./terminal/shell.js?v=665390e630";
-import { initTheme } from "./theme.js?v=665390e630";
+import { initArchiveSearch } from "./archive.js?v=12883d6848";
+import { initDiagrams } from "./diagrams.js?v=12883d6848";
+import { initNotFound } from "./not-found.js?v=12883d6848";
+import { initParentNavigation } from "./parent-nav.js?v=12883d6848";
+import { initReading } from "./reading.js?v=12883d6848";
+import { initTerminal } from "./terminal/shell.js?v=12883d6848";
+import { initTheme } from "./theme.js?v=12883d6848";
 
 /**
  * Web Storage can throw on access (privacy modes, blocked cookies), so every
  * use goes through a wrapper that degrades to "nothing stored".
  * @param {Record<string, any>} env
  * @param {"localStorage" | "sessionStorage"} name
- * @returns {import("./types.js?v=665390e630").SafeStorage}
+ * @returns {import("./types.js?v=12883d6848").SafeStorage}
  */
 function safeStorage(env, name) {
   /** @type {Storage | undefined} */
@@ -30,7 +30,7 @@ function safeStorage(env, name) {
  * @param {Record<string, any>} env
  */
 export function boot(env) {
-  /** @type {import("./types.js?v=665390e630").PageContext} */
+  /** @type {import("./types.js?v=12883d6848").PageContext} */
   const context = {
     document: env.document,
     window: env.window,

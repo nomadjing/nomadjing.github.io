@@ -1,3 +1,3 @@
-import { boot } from "./js/app.js?v=665390e630";
+import { boot } from "./js/app.js?v=12883d6848";
 
 boot(globalThis);

@@ -1,8 +1,8 @@
-import { isTyping } from "./parent-nav.js?v=665390e630";
+import { isTyping } from "./parent-nav.js?v=12883d6848";
 
 /**
  * Filters the notes tree by title and path; `/` focuses the search like in less or vim.
- * @param {import("./types.js?v=665390e630").PageContext} context
+ * @param {import("./types.js?v=12883d6848").PageContext} context
  */
 export function initArchiveSearch({ document }) {
   const query = /** @type {HTMLInputElement | null} */ (document.querySelector("#archive-query"));

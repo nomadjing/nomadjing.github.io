@@ -8,8 +8,8 @@
   <script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script>
   <link rel="preload" href="/fonts/jetbrains-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/vendor/katex.min.css">
-  <link rel="stylesheet" href="/style.css?v=665390e630">
-  <script type="module" src="/main.js?v=665390e630"></script>
+  <link rel="stylesheet" href="/style.css?v=12883d6848">
+  <script type="module" src="/main.js?v=12883d6848"></script>
 </head>
 <body class="page-note">
   <header class="site-header">
@@ -33,7 +33,7 @@
   <article>
     <header class="note-header">
       <h1 class="note-title">Hindley–Milner 类型系统</h1>
-      <dl class="metadata"><div><dt>read</dt><dd>~23 min</dd></div><div><dt>tags</dt><dd><a href="/tags/program-language/">#program-language</a></dd></div></dl>
+      <dl class="metadata"><div><dt>created</dt><dd><time datetime="2026-10-24">2026-10-24</time></dd></div><div><dt>read</dt><dd>~23 min</dd></div><div class="metadata-tags"><dt>tags</dt><dd><a href="/tags/program-language/">#program-language</a></dd></div></dl>
     </header>
     <div class="prose"><h2>背景与动机</h2>
 <p>HM 要兼顾静态类型检查与简洁的程序书写：在执行前检查类型是否匹配，同时减少程序员手写类型标注的负担。它结合类型推断与参数多态，让系统根据定义和使用关系推断类型，并让同一个定义适用于多种类型。</p>

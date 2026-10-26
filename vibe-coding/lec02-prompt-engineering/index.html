@@ -8,8 +8,8 @@
   <script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script>
   <link rel="preload" href="/fonts/jetbrains-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   
-  <link rel="stylesheet" href="/style.css?v=665390e630">
-  <script type="module" src="/main.js?v=665390e630"></script>
+  <link rel="stylesheet" href="/style.css?v=12883d6848">
+  <script type="module" src="/main.js?v=12883d6848"></script>
 </head>
 <body class="page-note">
   <header class="site-header">
@@ -33,7 +33,7 @@
   <article>
     <header class="note-header">
       <h1 class="note-title">Lec02 · 提示词与上下文工程</h1>
-      <dl class="metadata"><div><dt>read</dt><dd>~4 min</dd></div><div><dt>tags</dt><dd><a href="/tags/vibe-coding/">#vibe-coding</a></dd></div></dl>
+      <dl class="metadata"><div><dt>created</dt><dd><time datetime="2026-09-26">2026-09-26</time></dd></div><div><dt>read</dt><dd>~4 min</dd></div><div class="metadata-tags"><dt>tags</dt><dd><a href="/tags/vibe-coding/">#vibe-coding</a></dd></div></dl>
     </header>
     <div class="prose"><h2>从一句提示词到整个工作上下文</h2>
 <p><strong>要影响 Agent 的行动，需要组织它每一步决策所见的上下文，并给出可判断的完成条件。</strong> Agent 看到的不只是用户刚输入的话，还包括 harness 的指令与工具说明、<code>AGENTS.md</code>、按需加载的 Skill、历史消息、项目文件和工具输出。提示词工程关注一句话怎样表达；上下文工程关注<strong>哪些信息在何时进入工作集，它们来自哪里、适用到哪里、是否仍然有效</strong>。</p>

@@ -8,8 +8,8 @@
   <script>try{const saved=localStorage.getItem("site-theme");document.documentElement.dataset.theme=saved==="light"||saved==="dark"?saved:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}</script>
   <link rel="preload" href="/fonts/jetbrains-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/vendor/katex.min.css">
-  <link rel="stylesheet" href="/style.css?v=665390e630">
-  <script type="module" src="/main.js?v=665390e630"></script>
+  <link rel="stylesheet" href="/style.css?v=12883d6848">
+  <script type="module" src="/main.js?v=12883d6848"></script>
 </head>
 <body class="page-note">
   <header class="site-header">
@@ -33,7 +33,7 @@
   <article>
     <header class="note-header">
       <h1 class="note-title">贪心法</h1>
-      <dl class="metadata"><div><dt>read</dt><dd>~6 min</dd></div><div><dt>tags</dt><dd><a href="/tags/algorithms/">#algorithms</a></dd></div></dl>
+      <dl class="metadata"><div><dt>created</dt><dd><time datetime="2026-09-29">2026-09-29</time></dd></div><div><dt>read</dt><dd>~6 min</dd></div><div class="metadata-tags"><dt>tags</dt><dd><a href="/tags/algorithms/">#algorithms</a></dd></div></dl>
     </header>
     <div class="prose"><h2>核心思想与关键观察</h2>
 <p>贪心法反复作出一个当前看来最有利、且不会撤销的选择，再处理剩余问题。局部选择是否导向全局最优，必须针对目标与约束证明，不能只凭直觉。</p>
